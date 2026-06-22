@@ -1,0 +1,58 @@
+import { useState } from 'react';
+import { QueryClient, QueryClientProvider, useQuery } from '@tanstack/react-query';
+import Header from './components/Header';
+import TabBar from './components/TabBar';
+import AddTaskForm from './components/AddTaskForm';
+import TaskTable from './components/TaskTable';
+import PhotoGallery from './components/PhotoGallery';
+import WorkforceTab from './components/WorkforceTab';
+import Spinner from './components/Spinner';
+import { getTasks } from './lib/storage';
+
+const queryClient = new QueryClient();
+
+function AppInner() {
+  const [activeTab, setActiveTab] = useState('active');
+  const { data: tasks = [], isLoading } = useQuery({ queryKey: ['tasks'], queryFn: getTasks });
+
+  const activeTasks = tasks.filter(t => t.status === 'todo' || t.status === 'in_progress');
+  const doneTasks = tasks.filter(t => t.status === 'done');
+  const skippedTasks = tasks.filter(t => t.status === 'skip');
+
+  const counts = {
+    active: activeTasks.length,
+    done: doneTasks.length,
+    skipped: skippedTasks.length,
+  };
+
+  const tabTasks = { active: activeTasks, done: doneTasks, skipped: skippedTasks };
+
+  return (
+    <div className="min-h-screen">
+      <Header activeCount={activeTasks.length} completedCount={doneTasks.length} />
+      <TabBar activeTab={activeTab} onTabChange={setActiveTab} counts={counts} />
+      <main className="max-w-5xl mx-auto px-4 py-6 sm:px-6">
+        {isLoading ? (
+          <Spinner />
+        ) : activeTab === 'photos' ? (
+          <PhotoGallery />
+        ) : activeTab === 'workforce' ? (
+          <WorkforceTab />
+        ) : (
+          <>
+            {activeTab === 'active' && <AddTaskForm />}
+            <TaskTable tasks={tabTasks[activeTab] || []} tab={activeTab} />
+          </>
+        )}
+      </main>
+    </div>
+  );
+}
+
+export default function App() {
+  return (
+    <QueryClientProvider client={queryClient}>
+      <AppInner />
+    </QueryClientProvider>
+  );
+}
