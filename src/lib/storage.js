@@ -21,6 +21,7 @@ const DEFAULT_TASKS = [
   { id: '16', title: 'Merchology shirts - check arrival (today or tomorrow)', priority: 'high', status: 'done', notes: '' },
   { id: '17', title: 'Register SmartDocs in Tennessee and Georgia', priority: 'high', status: 'done', notes: '' },
   { id: '18', title: 'Get COI for JEA', priority: 'high', status: 'done', notes: '' },
+  { id: '19', title: 'Harvard Medical School AI certificate program - register', priority: 'medium', status: 'skip', notes: '' },
 ];
 
 export const getTasks = () => {
