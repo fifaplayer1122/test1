@@ -18,11 +18,13 @@ function smartParse(text) {
   const lines = text.split('\n').map(l => l.trim()).filter(Boolean);
   let section = null;
 
-  const isOnLeave   = l => /on leave today|currently on leave|absent today|out today|on leave:/i.test(l);
-  const isUpcoming  = l => /upcoming leave|future leave|planned leave|leave this week/i.test(l);
-  const isHoliday   = l => /holiday|public holiday|bank holiday/i.test(l);
-  const isHeader    = l => /^(name|employee|staff)\b/i.test(l) && /(reason|leave|dept|duration)/i.test(l);
+  const isOnLeave   = l => /today'?s report|on leave today|currently on leave|absent today|out today|on leave:/i.test(l);
+  const isUpcoming  = l => /upcoming report|upcoming leave|future leave|planned leave|leave this week|upcoming weeks/i.test(l);
+  const isHoliday   = l => /^holiday\b|upcoming holidays|public holiday|bank holiday/i.test(l);
+  const isHeader    = l => /^(sn\b|#\s|name|employee|staff)\b/i.test(l) && /(reason|leave|dept|duration|occasion|location)/i.test(l);
   const isDivider   = l => /^[-=_]{3,}$/.test(l);
+  // Strip leading SN number: "1  Dakshay..." → "Dakshay..."
+  const stripSN     = l => l.replace(/^\d+\s+/, '');
 
   const summaryLine = lines.find(l => l.length > 30 && !isOnLeave(l) && !isUpcoming(l) && !isHoliday(l));
   if (summaryLine) result.summary = summaryLine.slice(0, 200);
@@ -33,7 +35,7 @@ function smartParse(text) {
     if (isHoliday(line))  { section = 'holidays';       continue; }
     if (isHeader(line) || isDivider(line)) continue;
 
-    const cleaned = line.replace(/^[-•*►✓\d]+[.)]\s*/, '').trim();
+    const cleaned = stripSN(line.replace(/^[-•*►✓]+[.)]\s*/, '')).trim();
     if (!cleaned) continue;
 
     if (section === 'on_leave' || section === 'upcoming_leave') {
@@ -178,11 +180,13 @@ Independence Day | Thursday | July 4 | USA`}
       ) : (
         <>
           <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
-            <p className="text-blue-800 text-sm font-medium">
-              {totalOnLeave} on leave today · {totalUpcoming} upcoming leaves
-              {report.parsed_at && <span className="text-blue-500 font-normal"> · Updated {new Date(report.parsed_at).toLocaleString()}</span>}
+            {report.summary && <p className="text-blue-900 text-sm font-semibold mb-1">{report.summary}</p>}
+            <p className="text-blue-700 text-sm">
+              <span className="font-medium">{totalOnLeave}</span> on leave today &nbsp;·&nbsp;
+              <span className="font-medium">{totalUpcoming}</span> upcoming leaves &nbsp;·&nbsp;
+              <span className="font-medium">{report.holidays?.length || 0}</span> holiday{report.holidays?.length !== 1 ? 's' : ''}
             </p>
-            {report.summary && <p className="text-blue-700 text-sm mt-1">{report.summary}</p>}
+            {report.parsed_at && <p className="text-blue-400 text-xs mt-1">Updated {new Date(report.parsed_at).toLocaleString()}</p>}
           </div>
 
           <Section icon={UserMinus} title="On Leave Today">

@@ -35,5 +35,32 @@ export const getTasks = () => {
 export const saveTasks = (tasks) => localStorage.setItem(TASKS_KEY, JSON.stringify(tasks));
 export const getPhotos = () => JSON.parse(localStorage.getItem(PHOTOS_KEY) || '[]');
 export const savePhotos = (photos) => localStorage.setItem(PHOTOS_KEY, JSON.stringify(photos));
-export const getWorkforceReport = () => JSON.parse(localStorage.getItem(WF_KEY) || 'null');
+const DEFAULT_WORKFORCE = {
+  summary: "Today's Report - June 23rd 2026",
+  parsed_at: new Date('2026-06-23').toISOString(),
+  on_leave: [
+    { name: 'Dakshay', reason: 'Family Medical Emergency', duration: 'Full Day', dept: 'Services' },
+    { name: 'Raghu',   reason: 'Personal Reasons',         duration: 'Full Day', dept: 'Services' },
+  ],
+  upcoming_leave: [
+    { name: 'Dakshay',      reason: 'Family Medical Emergency - Planned Heart Surgery of Father in Law', duration: 'June 24th',            dept: 'Services' },
+    { name: 'Venkatesh',    reason: "Going to hometown & Friend's Reception",                            duration: 'June 24th & 26th',     dept: 'Services' },
+    { name: 'Harshvardhan', reason: 'Personal commitment',                                               duration: 'June 25th',            dept: 'R & D'    },
+    { name: 'Pooja',        reason: 'Function in family',                                                duration: 'June 26th',            dept: 'R & D'    },
+    { name: 'Shruti',       reason: 'Personal Reasons',                                                  duration: 'June 26th',            dept: 'HR'       },
+    { name: 'Satyaban',     reason: 'Planned Surgery',                                                   duration: 'July 13th till 16th',  dept: 'DevOps'   },
+  ],
+  holidays: [
+    { location: 'US', day: 'Fri', date: 'July 03rd', occasion: 'Independence Day' },
+  ],
+};
+
+export const getWorkforceReport = () => {
+  const stored = localStorage.getItem(WF_KEY);
+  if (!stored) {
+    localStorage.setItem(WF_KEY, JSON.stringify(DEFAULT_WORKFORCE));
+    return DEFAULT_WORKFORCE;
+  }
+  return JSON.parse(stored);
+};
 export const saveWorkforceReport = (report) => localStorage.setItem(WF_KEY, JSON.stringify(report));
