@@ -17,6 +17,10 @@ const DEFAULT_TASKS = [
   { id: '12', title: 'Register for APPA September Summit', priority: 'medium', status: 'todo', notes: '' },
   { id: '13', title: 'Order dot.Cards - https://dotcards.net/products/black-card', priority: 'medium', status: 'todo', notes: '' },
   { id: '14', title: 'Cancel LinkedIn Premium (personal + company)', priority: 'low', status: 'todo', notes: '2 weeks deadline' },
+  { id: '15', title: 'IBTTA Maintenance Workshop (New Orleans) - Order table + ship by today', priority: 'very_high', status: 'done', notes: 'Working on' },
+  { id: '16', title: 'Merchology shirts - check arrival (today or tomorrow)', priority: 'high', status: 'done', notes: '' },
+  { id: '17', title: 'Register SmartDocs in Tennessee and Georgia', priority: 'high', status: 'done', notes: '' },
+  { id: '18', title: 'Get COI for JEA', priority: 'high', status: 'done', notes: '' },
 ];
 
 export const getTasks = () => {
