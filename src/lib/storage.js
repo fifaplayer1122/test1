@@ -36,24 +36,28 @@ export const saveTasks = (tasks) => localStorage.setItem(TASKS_KEY, JSON.stringi
 export const getPhotos = () => JSON.parse(localStorage.getItem(PHOTOS_KEY) || '[]');
 export const savePhotos = (photos) => localStorage.setItem(PHOTOS_KEY, JSON.stringify(photos));
 const DEFAULT_WORKFORCE = {
-  summary: "Today's Report - June 23rd 2026",
-  parsed_at: new Date('2026-06-23').toISOString(),
+  summary: "Today's Report - June 24th 2026",
+  parsed_at: new Date('2026-06-24').toISOString(),
   on_leave: [
-    { name: 'Dakshay', reason: 'Family Medical Emergency', duration: 'Full Day', dept: 'Services' },
-    { name: 'Raghu',   reason: 'Personal Reasons',         duration: 'Full Day', dept: 'Services' },
+    { name: 'Dakshay',         reason: 'Family Medical Emergency',          duration: 'Full Day', dept: 'Services' },
+    { name: 'Venkatesh',       reason: "Going to hometown & Friend's Reception", duration: 'Full Day', dept: 'Services' },
+    { name: 'Aditya Simhadri', reason: 'Personal Emergency',                duration: 'Full Day', dept: '' },
   ],
   upcoming_leave: [
-    { name: 'Dakshay',      reason: 'Family Medical Emergency - Planned Heart Surgery of Father in Law', duration: 'June 24th',            dept: 'Services' },
-    { name: 'Venkatesh',    reason: "Going to hometown & Friend's Reception",                            duration: 'June 24th & 26th',     dept: 'Services' },
-    { name: 'Harshvardhan', reason: 'Personal commitment',                                               duration: 'June 25th',            dept: 'R & D'    },
-    { name: 'Pooja',        reason: 'Function in family',                                                duration: 'June 26th',            dept: 'R & D'    },
-    { name: 'Shruti',       reason: 'Personal Reasons',                                                  duration: 'June 26th',            dept: 'HR'       },
-    { name: 'Satyaban',     reason: 'Planned Surgery',                                                   duration: 'July 13th till 16th',  dept: 'DevOps'   },
+    { name: 'Dakshay',      reason: 'Family Medical Emergency - Planned Heart Surgery of Father in Law', duration: 'June 25th & 26th',    dept: 'Services' },
+    { name: 'Venkatesh',    reason: "Going to hometown & Friend's Reception",                            duration: 'June 26th',           dept: 'Services' },
+    { name: 'Harshvardhan', reason: 'Personal commitment',                                               duration: 'June 25th',           dept: 'R & D'    },
+    { name: 'Pooja',        reason: 'Function in family',                                                duration: 'June 26th',           dept: 'R & D'    },
+    { name: 'Shruti',       reason: 'Personal Reasons',                                                  duration: 'June 26th',           dept: 'HR'       },
+    { name: 'Keerthana',    reason: 'Brother Engagement & Housewarming Ceremony',                        duration: 'July 8th & 9th',      dept: 'R & D'    },
+    { name: 'Satyaban',     reason: 'Planned Surgery',                                                   duration: 'July 13th till 16th', dept: 'DevOps'   },
   ],
   holidays: [
     { location: 'US', day: 'Fri', date: 'July 03rd', occasion: 'Independence Day' },
   ],
 };
+
+const WF_VERSION = 'v20260624';
 
 export const getWorkforceReport = () => {
   const stored = localStorage.getItem(WF_KEY);
@@ -61,6 +65,13 @@ export const getWorkforceReport = () => {
     localStorage.setItem(WF_KEY, JSON.stringify(DEFAULT_WORKFORCE));
     return DEFAULT_WORKFORCE;
   }
-  return JSON.parse(stored);
+  const parsed = JSON.parse(stored);
+  // Replace with new default if it's an older seeded version (not a user paste)
+  if (parsed._version !== WF_VERSION && !parsed._user_edited) {
+    const fresh = { ...DEFAULT_WORKFORCE, _version: WF_VERSION };
+    localStorage.setItem(WF_KEY, JSON.stringify(fresh));
+    return fresh;
+  }
+  return parsed;
 };
-export const saveWorkforceReport = (report) => localStorage.setItem(WF_KEY, JSON.stringify(report));
+export const saveWorkforceReport = (report) => localStorage.setItem(WF_KEY, JSON.stringify({ ...report, _user_edited: true }));
