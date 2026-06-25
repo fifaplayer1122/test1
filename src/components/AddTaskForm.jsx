@@ -1,76 +1,93 @@
 import { useState } from 'react';
-import { PlusCircle } from 'lucide-react';
+import { Plus } from 'lucide-react';
 import { useQueryClient } from '@tanstack/react-query';
 import { getTasks, saveTasks } from '../lib/storage';
 
 const PRIORITIES = [
   { value: 'very_high', label: '🔴 Very High' },
-  { value: 'high', label: '🟠 High' },
-  { value: 'medium', label: '🟡 Medium' },
-  { value: 'low', label: '🟢 Low' },
+  { value: 'high',      label: '🟠 High'      },
+  { value: 'medium',    label: '🟡 Medium'    },
+  { value: 'low',       label: '🟢 Low'       },
 ];
 
 export default function AddTaskForm() {
-  const [title, setTitle] = useState('');
+  const [title, setTitle]       = useState('');
   const [priority, setPriority] = useState('medium');
-  const [notes, setNotes] = useState('');
+  const [notes, setNotes]       = useState('');
+  const [open, setOpen]         = useState(false);
   const queryClient = useQueryClient();
 
   const handleSubmit = (e) => {
     e.preventDefault();
     if (!title.trim()) return;
     const tasks = getTasks();
-    const newTask = {
+    saveTasks([...tasks, {
       id: crypto.randomUUID(),
       title: title.trim(),
       priority,
       notes: notes.trim(),
       status: 'todo',
       created_at: new Date().toISOString(),
-    };
-    saveTasks([...tasks, newTask]);
+    }]);
     queryClient.invalidateQueries({ queryKey: ['tasks'] });
-    setTitle('');
-    setNotes('');
-    setPriority('medium');
+    setTitle(''); setNotes(''); setPriority('medium'); setOpen(false);
   };
 
   return (
-    <form onSubmit={handleSubmit} className="bg-white border border-gray-200 rounded-xl p-4 mb-4">
-      <div className="flex items-center gap-2 mb-3">
-        <PlusCircle className="text-gray-400 flex-shrink-0" size={18} />
-        <input
-          type="text"
-          placeholder="Add a new action item..."
-          value={title}
-          onChange={e => setTitle(e.target.value)}
-          className="flex-1 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-400"
-        />
-      </div>
-      <div className="flex gap-2 items-center flex-wrap">
-        <select
-          value={priority}
-          onChange={e => setPriority(e.target.value)}
-          className="border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-400"
-        >
-          {PRIORITIES.map(p => (
-            <option key={p.value} value={p.value}>{p.label}</option>
-          ))}
-        </select>
-        <input
-          type="text"
-          placeholder="Notes (optional)"
-          value={notes}
-          onChange={e => setNotes(e.target.value)}
-          className="flex-1 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-400 min-w-0"
-        />
+    <div className="mb-4">
+      {/* Collapsed — just a big tap target on mobile */}
+      {!open ? (
         <button
-          type="submit"
-          className="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors"
+          onClick={() => setOpen(true)}
+          className="w-full flex items-center gap-3 bg-white border border-dashed border-gray-300 rounded-xl px-4 py-3 text-gray-400 hover:border-blue-400 hover:text-blue-500 transition-colors text-sm"
         >
-          Add
+          <Plus size={18} />
+          <span>Add new action item...</span>
         </button>
-      </div>
-    </form>
+      ) : (
+        <form onSubmit={handleSubmit} className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm space-y-3">
+          <input
+            type="text"
+            placeholder="Action item title..."
+            value={title}
+            onChange={e => setTitle(e.target.value)}
+            autoFocus
+            className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-blue-400"
+          />
+          <select
+            value={priority}
+            onChange={e => setPriority(e.target.value)}
+            className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-blue-400 bg-white"
+          >
+            {PRIORITIES.map(p => (
+              <option key={p.value} value={p.value}>{p.label}</option>
+            ))}
+          </select>
+          <input
+            type="text"
+            placeholder="Notes (optional)"
+            value={notes}
+            onChange={e => setNotes(e.target.value)}
+            className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-blue-400"
+          />
+          <div className="flex gap-2 pt-1">
+            <button
+              type="button"
+              onClick={() => { setOpen(false); setTitle(''); setNotes(''); setPriority('medium'); }}
+              className="flex-1 border border-gray-300 text-gray-600 rounded-lg py-2.5 text-sm font-medium hover:bg-gray-50"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={!title.trim()}
+              className="flex-1 bg-blue-600 text-white rounded-lg py-2.5 text-sm font-medium hover:bg-blue-700 disabled:opacity-50 transition-colors"
+            >
+              Add Task
+            </button>
+          </div>
+        </form>
+      )}
+    </div>
   );
 }
