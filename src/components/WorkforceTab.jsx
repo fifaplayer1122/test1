@@ -4,10 +4,26 @@ import { UserMinus, CalendarDays, Plane, X, ClipboardPaste, Users, Calendar } fr
 import { getWorkforceReport, saveWorkforceReport } from '../lib/storage';
 import Spinner from './Spinner';
 
-// ─── Parser for the standard SmartDocs workforce email format ────────────────
+// ─── Parser: SmartDocs tab-separated workforce format ────────────────────────
+//
+// Expected format (tab-separated, copied from Outlook/Excel table):
+//
+//   Today's Report  - June 25th 2026
+//   SN  Employee Name  Reason  Duration  Department
+//   1   Dakshay        ...     Full Day  Services
+//
+//   Upcoming Report - June 26th till July 31st '26
+//   SN  Employee Name  Reason  Duration  Department
+//   1   ...
+//
+//   Holiday - June 26th till July 31st '26
+//   SN  Location  Day  Date  Occasion
+//   1   US        Fri  July 03rd  Independence Day
+//   (or "No Holidays" — skipped automatically)
 
 function parseWorkforceEmail(text) {
-  const lines = text.split('\n').map(l => l.trim());
+  // Normalise line endings; split on newlines; keep raw tabs within lines
+  const lines = text.split(/\r?\n/);
 
   const result = {
     summary: '',
@@ -18,74 +34,65 @@ function parseWorkforceEmail(text) {
     parsed_at: new Date().toISOString(),
   };
 
-  // Extract the intro summary (first long descriptive line)
-  for (const line of lines) {
-    if (line.length > 40 && /workforce|availability|posted|leave/i.test(line)) {
-      result.summary = line;
-      break;
-    }
-  }
+  // Section header patterns
+  const isTodayHeader    = l => /Today'?s\s+Report/i.test(l);
+  const isUpcomingHeader = l => /Upcoming\s+Report/i.test(l);
+  const isHolidayHeader  = l => /^Holiday\s*[-–]/i.test(l.trim());
+  const isColHeader      = l => /^\s*SN\b/i.test(l);
+  const isNoHolidays     = l => /No\s+Holidays/i.test(l);
+  const isBlank          = l => l.trim() === '' || /^[\t\s]+$/.test(l);
 
-  // Extract today's report date
-  const todayMatch = text.match(/Today['']?s Report\s*[-–]?\s*([A-Za-z]+ +\d+(?:st|nd|rd|th)? +\d{4})/i);
+  // Extract today's date from section header
+  const todayMatch = text.match(/Today'?s\s+Report\s*[-–]?\s*([A-Za-z]+\s+\d+(?:st|nd|rd|th)?\s+\d{4})/i);
   if (todayMatch) result.report_date = todayMatch[1].replace(/\s+/g, ' ').trim();
 
-  // Detect section boundaries
-  const SECTIONS = {
-    today:    /Today['']?s Report/i,
-    upcoming: /Upcoming Report/i,
-    holiday:  /Holiday\s*[-–]/i,
-  };
+  // Extract intro summary
+  for (const line of lines) {
+    const t = line.trim();
+    if (t.length > 40 && /workforce|availability|posted|leave/i.test(t)) { result.summary = t; break; }
+  }
 
-  let currentSection = null;
-  let inDataRows = false;
+  let section      = null; // 'today' | 'upcoming' | 'holiday'
+  let skipSection  = false; // true when "No Holidays" seen
 
-  for (let i = 0; i < lines.length; i++) {
-    const line = lines[i];
-    if (!line) { inDataRows = false; continue; }
+  for (const rawLine of lines) {
+    const trimmed = rawLine.trim();
 
-    // Section header detection
-    if (SECTIONS.today.test(line))    { currentSection = 'today';    inDataRows = false; continue; }
-    if (SECTIONS.upcoming.test(line)) { currentSection = 'upcoming'; inDataRows = false; continue; }
-    if (SECTIONS.holiday.test(line))  { currentSection = 'holiday';  inDataRows = false; continue; }
+    // Detect section headers (check trimmed line)
+    if (isTodayHeader(trimmed))    { section = 'today';    skipSection = false; continue; }
+    if (isUpcomingHeader(trimmed)) { section = 'upcoming'; skipSection = false; continue; }
+    if (isHolidayHeader(trimmed))  { section = 'holiday';  skipSection = false; continue; }
 
-    // Skip column headers
-    if (/^SN\b/i.test(line) || /^(Employee Name|Reason|Duration|Department|Location|Day|Date|Occasion)/i.test(line)) {
-      inDataRows = true;
-      continue;
-    }
+    // Skip column header rows and blank rows
+    if (isColHeader(trimmed) || isBlank(trimmed)) continue;
 
-    // Skip filler lines
-    if (/^Upcoming weeks|^Upcoming Holidays|^Furnished|^This is to/i.test(line)) continue;
-    if (/^[-=_]{2,}$/.test(line)) continue;
+    // "No Holidays" — mark this holiday block to skip
+    if (section === 'holiday' && isNoHolidays(trimmed)) { skipSection = true; continue; }
 
-    if (!inDataRows || !currentSection) continue;
+    if (!section || skipSection) continue;
 
-    // Parse numbered row: "1  Dakshay  Family Medical Emergency  Full Day  Services"
-    // Fields are separated by 2+ spaces (copy from table) or tabs
-    const withoutSN = line.replace(/^\d+\s+/, '');
-    if (!withoutSN || withoutSN === line) continue; // no leading number = not a data row
+    // Split by tab (primary) — the format is always TSV when copied from Outlook table
+    const cols = rawLine.split('\t').map(c => c.trim());
 
-    const fields = withoutSN.split(/\t|\s{2,}/).map(f => f.trim()).filter(Boolean);
+    // First column must be a row number (SN); skip if not
+    if (!cols[0] || !/^\d+$/.test(cols[0])) continue;
 
-    if (currentSection === 'today' || currentSection === 'upcoming') {
-      if (fields.length >= 1) {
-        result[currentSection === 'today' ? 'on_leave' : 'upcoming_leave'].push({
-          name:     fields[0] || '',
-          reason:   fields[1] || '',
-          duration: fields[2] || '',
-          dept:     fields[3] || '',
-        });
-      }
-    } else if (currentSection === 'holiday') {
-      if (fields.length >= 1) {
-        result.holidays.push({
-          location: fields[0] || '',
-          day:      fields[1] || '',
-          date:     fields[2] || '',
-          occasion: fields[3] || '',
-        });
-      }
+    // cols: [SN, col1, col2, col3, col4]
+    if (section === 'today' || section === 'upcoming') {
+      const key = section === 'today' ? 'on_leave' : 'upcoming_leave';
+      result[key].push({
+        name:     cols[1] || '',
+        reason:   cols[2] || '',
+        duration: cols[3] || '',
+        dept:     cols[4] || '',
+      });
+    } else if (section === 'holiday') {
+      result.holidays.push({
+        location: cols[1] || '',
+        day:      cols[2] || '',
+        date:     cols[3] || '',
+        occasion: cols[4] || '',
+      });
     }
   }
 
