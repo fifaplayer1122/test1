@@ -62,16 +62,16 @@ const WF_VERSION = 'v20260624';
 export const getWorkforceReport = () => {
   const stored = localStorage.getItem(WF_KEY);
   if (!stored) {
-    localStorage.setItem(WF_KEY, JSON.stringify(DEFAULT_WORKFORCE));
+    localStorage.setItem(WF_KEY, JSON.stringify({ ...DEFAULT_WORKFORCE, _version: WF_VERSION }));
     return DEFAULT_WORKFORCE;
   }
   const parsed = JSON.parse(stored);
-  // Replace with new default if it's an older seeded version (not a user paste)
-  if (parsed._version !== WF_VERSION && !parsed._user_edited) {
+  // Always refresh seeded data when a new version is deployed
+  if (!parsed._user_edited && parsed._version !== WF_VERSION) {
     const fresh = { ...DEFAULT_WORKFORCE, _version: WF_VERSION };
     localStorage.setItem(WF_KEY, JSON.stringify(fresh));
     return fresh;
   }
   return parsed;
 };
-export const saveWorkforceReport = (report) => localStorage.setItem(WF_KEY, JSON.stringify({ ...report, _user_edited: true }));
+export const saveWorkforceReport = (report) => localStorage.setItem(WF_KEY, JSON.stringify({ ...report, _user_edited: true, _version: WF_VERSION }));

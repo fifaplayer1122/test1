@@ -6,8 +6,10 @@ import AddTaskForm from './components/AddTaskForm';
 import TaskTable from './components/TaskTable';
 import PhotoGallery from './components/PhotoGallery';
 import WorkforceTab from './components/WorkforceTab';
+import AuthGate from './components/AuthGate';
 import Spinner from './components/Spinner';
 import { getTasks } from './lib/storage';
+import { CLIENT_ID } from './lib/auth';
 
 const queryClient = new QueryClient();
 
@@ -19,12 +21,7 @@ function AppInner() {
   const doneTasks = tasks.filter(t => t.status === 'done');
   const skippedTasks = tasks.filter(t => t.status === 'skip');
 
-  const counts = {
-    active: activeTasks.length,
-    done: doneTasks.length,
-    skipped: skippedTasks.length,
-  };
-
+  const counts = { active: activeTasks.length, done: doneTasks.length, skipped: skippedTasks.length };
   const tabTasks = { active: activeTasks, done: doneTasks, skipped: skippedTasks };
 
   return (
@@ -50,9 +47,16 @@ function AppInner() {
 }
 
 export default function App() {
+  const authEnabled = CLIENT_ID && CLIENT_ID !== 'YOUR_CLIENT_ID';
   return (
     <QueryClientProvider client={queryClient}>
-      <AppInner />
+      {authEnabled ? (
+        <AuthGate>
+          <AppInner />
+        </AuthGate>
+      ) : (
+        <AppInner />
+      )}
     </QueryClientProvider>
   );
 }
