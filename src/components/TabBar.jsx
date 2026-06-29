@@ -1,11 +1,12 @@
-import { CheckSquare, CheckCircle, SkipForward, Image, Users } from 'lucide-react';
+import { LayoutDashboard, CheckSquare, CheckCircle, SkipForward, Image, Users } from 'lucide-react';
 
 const TABS = [
-  { id: 'active',    label: 'Active',     icon: CheckSquare  },
-  { id: 'done',      label: 'Done',       icon: CheckCircle  },
-  { id: 'skipped',   label: 'Skipped',    icon: SkipForward  },
-  { id: 'photos',    label: 'Photos',     icon: Image        },
-  { id: 'workforce', label: 'Workforce',  icon: Users        },
+  { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
+  { id: 'active',    label: 'Active',    icon: CheckSquare     },
+  { id: 'done',      label: 'Done',      icon: CheckCircle     },
+  { id: 'skipped',   label: 'Skipped',   icon: SkipForward     },
+  { id: 'photos',    label: 'Photos',    icon: Image           },
+  { id: 'workforce', label: 'Workforce', icon: Users           },
 ];
 
 export default function TabBar({ activeTab, onTabChange, counts }) {

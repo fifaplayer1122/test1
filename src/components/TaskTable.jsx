@@ -12,6 +12,12 @@ const PRIORITIES = [
   { value: 'low',       label: '🟢 Low'       },
 ];
 
+const SORT_OPTIONS = [
+  { value: 'priority', label: 'Priority' },
+  { value: 'eta',      label: 'ETA'      },
+  { value: 'title',    label: 'Title'    },
+];
+
 const inputCls = "border border-blue-400 rounded-lg px-2.5 py-2 w-full bg-white text-gray-800 text-sm focus:outline-none focus:ring-2 focus:ring-blue-200";
 
 function ActionBtn({ onClick, icon: Icon, color, title }) {
@@ -26,21 +32,53 @@ function ActionBtn({ onClick, icon: Icon, color, title }) {
   );
 }
 
+function formatEta(etaStr) {
+  if (!etaStr) return null;
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const etaDate = new Date(etaStr + 'T00:00:00');
+  if (etaDate.getTime() === today.getTime()) {
+    return { label: 'Today', cls: 'text-orange-500' };
+  }
+  if (etaDate < today) {
+    return { label: 'Overdue', cls: 'text-red-500' };
+  }
+  const label = etaDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  return { label, cls: 'text-gray-400' };
+}
+
 export default function TaskTable({ tasks, tab }) {
   const [editingId, setEditingId] = useState(null);
   const [editData, setEditData]   = useState({});
   const [deleteId, setDeleteId]   = useState(null);
+  const [sortBy, setSortBy]       = useState('priority');
   const queryClient = useQueryClient();
 
-  const sorted = tab === 'active'
-    ? [...tasks].sort((a, b) => (PRIORITY_CONFIG[a.priority]?.order ?? 99) - (PRIORITY_CONFIG[b.priority]?.order ?? 99))
-    : tasks;
+  const sortTasks = (list) => {
+    if (sortBy === 'priority') {
+      return [...list].sort((a, b) => (PRIORITY_CONFIG[a.priority]?.order ?? 99) - (PRIORITY_CONFIG[b.priority]?.order ?? 99));
+    }
+    if (sortBy === 'eta') {
+      return [...list].sort((a, b) => {
+        if (!a.eta && !b.eta) return 0;
+        if (!a.eta) return 1;
+        if (!b.eta) return -1;
+        return a.eta.localeCompare(b.eta);
+      });
+    }
+    if (sortBy === 'title') {
+      return [...list].sort((a, b) => a.title.localeCompare(b.title));
+    }
+    return list;
+  };
+
+  const sorted = sortTasks(tasks);
 
   const invalidate = () => queryClient.invalidateQueries({ queryKey: ['tasks'] });
   const updateTask = (id, updates) => { saveTasks(getTasks().map(t => t.id === id ? { ...t, ...updates } : t)); invalidate(); };
   const deleteTask = (id) => { saveTasks(getTasks().filter(t => t.id !== id)); invalidate(); };
-  const startEdit  = (task) => { setEditingId(task.id); setEditData({ title: task.title, priority: task.priority, notes: task.notes || '' }); };
-  const saveEdit   = (id) => { if (!editData.title?.trim()) return; updateTask(id, editData); setEditingId(null); };
+  const startEdit  = (task) => { setEditingId(task.id); setEditData({ title: task.title, priority: task.priority, notes: task.notes || '', eta: task.eta || '' }); };
+  const saveEdit   = (id) => { if (!editData.title?.trim()) return; updateTask(id, { ...editData, eta: editData.eta || undefined }); setEditingId(null); };
   const cancelEdit = () => setEditingId(null);
 
   if (sorted.length === 0) {
@@ -61,6 +99,24 @@ export default function TaskTable({ tasks, tab }) {
         onCancel={() => setDeleteId(null)}
       />
 
+      {/* Sort bar */}
+      <div className="flex items-center gap-2 mb-3 flex-wrap">
+        <span className="text-xs text-gray-400 font-medium">Sort:</span>
+        {SORT_OPTIONS.map(opt => (
+          <button
+            key={opt.value}
+            onClick={() => setSortBy(opt.value)}
+            className={`text-xs px-3 py-1 rounded-full border transition-colors ${
+              sortBy === opt.value
+                ? 'bg-blue-600 text-white border-blue-600'
+                : 'bg-white border border-gray-200 text-gray-600 hover:border-blue-300'
+            }`}
+          >
+            {opt.label}
+          </button>
+        ))}
+      </div>
+
       {/* ── Desktop table ── */}
       <div className="hidden md:block bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm">
         <table className="w-full text-sm">
@@ -70,6 +126,7 @@ export default function TaskTable({ tasks, tab }) {
               <th className="px-4 py-3 text-left text-xs font-semibold text-gray-400 uppercase">Task</th>
               <th className="px-4 py-3 text-left text-xs font-semibold text-gray-400 uppercase w-32">Priority</th>
               <th className="px-4 py-3 text-left text-xs font-semibold text-gray-400 uppercase">Notes</th>
+              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-400 uppercase w-24">ETA</th>
               <th className="px-4 py-3 w-36"></th>
             </tr>
           </thead>
@@ -77,6 +134,7 @@ export default function TaskTable({ tasks, tab }) {
             {sorted.map((task, idx) => {
               const isEditing = editingId === task.id;
               const cfg = PRIORITY_CONFIG[task.priority] || PRIORITY_CONFIG.medium;
+              const etaInfo = formatEta(task.eta);
               return (
                 <tr key={task.id} className={`border-l-4 ${cfg.border} hover:bg-gray-50/80 transition-colors`}>
                   <td className="px-4 py-3 text-gray-400 text-xs">{idx + 1}</td>
@@ -94,6 +152,13 @@ export default function TaskTable({ tasks, tab }) {
                     {isEditing
                       ? <input className={inputCls} placeholder="Notes" value={editData.notes} onChange={e => setEditData(d => ({ ...d, notes: e.target.value }))} onKeyDown={e => { if (e.key === 'Escape') cancelEdit(); }} />
                       : (task.notes || <span className="text-gray-300">—</span>)}
+                  </td>
+                  <td className="px-4 py-3">
+                    {isEditing
+                      ? <input type="date" className={inputCls} value={editData.eta} onChange={e => setEditData(d => ({ ...d, eta: e.target.value }))} />
+                      : etaInfo
+                        ? <span className={`text-xs font-medium ${etaInfo.cls}`}>📅 {etaInfo.label}</span>
+                        : <span className="text-gray-300 text-xs">—</span>}
                   </td>
                   <td className="px-4 py-3">
                     {isEditing ? (
@@ -128,6 +193,7 @@ export default function TaskTable({ tasks, tab }) {
         {sorted.map((task, idx) => {
           const isEditing = editingId === task.id;
           const cfg = PRIORITY_CONFIG[task.priority] || PRIORITY_CONFIG.medium;
+          const etaInfo = formatEta(task.eta);
           return (
             <div key={task.id} className={`bg-white border border-gray-200 rounded-xl border-l-4 ${cfg.border} shadow-sm`}>
               {isEditing ? (
@@ -137,6 +203,7 @@ export default function TaskTable({ tasks, tab }) {
                     {PRIORITIES.map(p => <option key={p.value} value={p.value}>{p.label}</option>)}
                   </select>
                   <input className={inputCls} placeholder="Notes (optional)" value={editData.notes} onChange={e => setEditData(d => ({ ...d, notes: e.target.value }))} />
+                  <input type="date" className={`${inputCls} w-full`} value={editData.eta} onChange={e => setEditData(d => ({ ...d, eta: e.target.value }))} />
                   <div className="flex gap-2 pt-1">
                     <button onClick={() => saveEdit(task.id)} className="flex-1 py-2 bg-blue-600 text-white text-sm rounded-lg font-medium">Save</button>
                     <button onClick={cancelEdit} className="flex-1 py-2 bg-gray-100 text-gray-600 text-sm rounded-lg"><X size={14} className="inline mr-1" />Cancel</button>
@@ -148,6 +215,9 @@ export default function TaskTable({ tasks, tab }) {
                     <div className="flex-1 min-w-0">
                       <p className="font-semibold text-gray-900 text-sm leading-snug">{idx + 1}. {task.title}</p>
                       {task.notes && <p className="text-xs text-gray-400 mt-0.5 truncate">{task.notes}</p>}
+                      {etaInfo && (
+                        <p className={`text-xs font-medium mt-0.5 ${etaInfo.cls}`}>📅 {etaInfo.label}</p>
+                      )}
                     </div>
                     <span className={`flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-full flex-shrink-0 ${
                       task.priority === 'very_high' ? 'bg-red-50 text-red-600' :

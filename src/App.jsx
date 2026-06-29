@@ -6,6 +6,7 @@ import AddTaskForm from './components/AddTaskForm';
 import TaskTable from './components/TaskTable';
 import PhotoGallery from './components/PhotoGallery';
 import WorkforceTab from './components/WorkforceTab';
+import Dashboard from './components/Dashboard';
 import AuthGate from './components/AuthGate';
 import Spinner from './components/Spinner';
 import { getTasks } from './lib/storage';
@@ -14,7 +15,7 @@ import { CLIENT_ID } from './lib/auth';
 const queryClient = new QueryClient();
 
 function AppInner() {
-  const [activeTab, setActiveTab] = useState('active');
+  const [activeTab, setActiveTab] = useState('dashboard');
   const { data: tasks = [], isLoading } = useQuery({ queryKey: ['tasks'], queryFn: getTasks });
 
   const activeTasks = tasks.filter(t => t.status === 'todo' || t.status === 'in_progress');
@@ -31,6 +32,8 @@ function AppInner() {
       <main className="max-w-5xl mx-auto px-3 py-4 sm:px-6 sm:py-6">
         {isLoading ? (
           <Spinner />
+        ) : activeTab === 'dashboard' ? (
+          <Dashboard />
         ) : activeTab === 'photos' ? (
           <PhotoGallery />
         ) : activeTab === 'workforce' ? (

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Plus } from 'lucide-react';
+import { Plus, Calendar } from 'lucide-react';
 import { useQueryClient } from '@tanstack/react-query';
 import { getTasks, saveTasks } from '../lib/storage';
 
@@ -14,6 +14,7 @@ export default function AddTaskForm() {
   const [title, setTitle]       = useState('');
   const [priority, setPriority] = useState('medium');
   const [notes, setNotes]       = useState('');
+  const [eta, setEta]           = useState('');
   const [open, setOpen]         = useState(false);
   const queryClient = useQueryClient();
 
@@ -26,11 +27,12 @@ export default function AddTaskForm() {
       title: title.trim(),
       priority,
       notes: notes.trim(),
+      eta: eta || undefined,
       status: 'todo',
       created_at: new Date().toISOString(),
     }]);
     queryClient.invalidateQueries({ queryKey: ['tasks'] });
-    setTitle(''); setNotes(''); setPriority('medium'); setOpen(false);
+    setTitle(''); setNotes(''); setPriority('medium'); setEta(''); setOpen(false);
   };
 
   return (
@@ -70,10 +72,21 @@ export default function AddTaskForm() {
             onChange={e => setNotes(e.target.value)}
             className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-blue-400"
           />
+          <div className="relative">
+            <label className="flex items-center gap-1.5 text-xs text-gray-400 font-medium mb-1">
+              <Calendar size={13} /> ETA
+            </label>
+            <input
+              type="date"
+              value={eta}
+              onChange={e => setEta(e.target.value)}
+              className="border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-blue-400 w-full bg-white"
+            />
+          </div>
           <div className="flex gap-2 pt-1">
             <button
               type="button"
-              onClick={() => { setOpen(false); setTitle(''); setNotes(''); setPriority('medium'); }}
+              onClick={() => { setOpen(false); setTitle(''); setNotes(''); setPriority('medium'); setEta(''); }}
               className="flex-1 border border-gray-300 text-gray-600 rounded-lg py-2.5 text-sm font-medium hover:bg-gray-50"
             >
               Cancel
