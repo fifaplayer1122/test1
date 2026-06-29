@@ -33,7 +33,7 @@ function AppInner() {
         {isLoading ? (
           <Spinner />
         ) : activeTab === 'dashboard' ? (
-          <Dashboard />
+          <Dashboard onNavigate={setActiveTab} />
         ) : activeTab === 'photos' ? (
           <PhotoGallery />
         ) : activeTab === 'workforce' ? (
