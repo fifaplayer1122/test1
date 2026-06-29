@@ -1,34 +1,80 @@
 import { useRef, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { Trash2, ImagePlus, X } from 'lucide-react';
+import { Trash2, ImagePlus, X, Loader2 } from 'lucide-react';
 import { getPhotos, savePhotos } from '../lib/storage';
 import ConfirmDialog from './ConfirmDialog';
 import Spinner from './Spinner';
 
+const MAX_PX = 1200;
+const QUALITY = 0.75;
+
+function compressImage(file) {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    const url = URL.createObjectURL(file);
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+      let { width, height } = img;
+      if (width > MAX_PX || height > MAX_PX) {
+        if (width > height) { height = Math.round((height * MAX_PX) / width); width = MAX_PX; }
+        else { width = Math.round((width * MAX_PX) / height); height = MAX_PX; }
+      }
+      const canvas = document.createElement('canvas');
+      canvas.width = width;
+      canvas.height = height;
+      canvas.getContext('2d').drawImage(img, 0, 0, width, height);
+      resolve(canvas.toDataURL('image/jpeg', QUALITY));
+    };
+    img.onerror = reject;
+    img.src = url;
+  });
+}
+
 export default function PhotoGallery() {
   const { data: photos = [], isLoading } = useQuery({ queryKey: ['photos'], queryFn: getPhotos });
   const queryClient = useQueryClient();
-  const fileRef  = useRef();
-  const [deleteId, setDeleteId]   = useState(null);
-  const [preview, setPreview]     = useState(null); // full-screen preview
+  const fileRef = useRef();
+  const [deleteId, setDeleteId]     = useState(null);
+  const [preview, setPreview]       = useState(null);
+  const [uploading, setUploading]   = useState(false);
+  const [uploadStatus, setUploadStatus] = useState('');
 
   const invalidate = () => queryClient.invalidateQueries({ queryKey: ['photos'] });
 
-  const handleFiles = (e) => {
+  const handleFiles = async (e) => {
     const files = Array.from(e.target.files || []);
-    if (!files.length) return;
-    const current = getPhotos();
-    let pending = files.length;
-    const newPhotos = [];
-    files.forEach(file => {
-      const reader = new FileReader();
-      reader.onload = (ev) => {
-        newPhotos.push({ id: crypto.randomUUID(), image_url: ev.target.result, caption: '', created_date: new Date().toISOString() });
-        if (--pending === 0) { savePhotos([...current, ...newPhotos]); invalidate(); }
-      };
-      reader.readAsDataURL(file);
-    });
     e.target.value = '';
+    if (!files.length) return;
+
+    setUploading(true);
+    setUploadStatus(`Processing 0 / ${files.length}…`);
+
+    const newPhotos = [];
+    for (let i = 0; i < files.length; i++) {
+      try {
+        setUploadStatus(`Processing ${i + 1} / ${files.length}…`);
+        const dataUrl = await compressImage(files[i]);
+        newPhotos.push({
+          id: crypto.randomUUID(),
+          image_url: dataUrl,
+          caption: '',
+          created_date: new Date().toISOString(),
+        });
+      } catch {
+        // skip unreadable files
+      }
+    }
+
+    try {
+      const current = getPhotos();
+      savePhotos([...current, ...newPhotos]);
+      invalidate();
+    } catch {
+      alert('Storage full — please delete some photos first.');
+    }
+
+    setUploading(false);
+    setUploadStatus('');
   };
 
   const deletePhoto = (id) => { savePhotos(getPhotos().filter(p => p.id !== id)); invalidate(); };
@@ -55,11 +101,20 @@ export default function PhotoGallery() {
         </div>
       )}
 
+      {/* Upload progress overlay */}
+      {uploading && (
+        <div className="fixed inset-0 z-50 bg-black/60 flex flex-col items-center justify-center gap-3">
+          <Loader2 size={36} className="text-white animate-spin" />
+          <p className="text-white font-medium text-sm">{uploadStatus}</p>
+        </div>
+      )}
+
       <div className="flex items-center justify-between mb-4">
         <p className="text-sm text-gray-500">{photos.length} photo{photos.length !== 1 ? 's' : ''}</p>
         <button
           onClick={() => fileRef.current?.click()}
-          className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors shadow-sm"
+          disabled={uploading}
+          className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors shadow-sm disabled:opacity-50"
         >
           <ImagePlus size={16} /> Add Photos
         </button>
@@ -85,7 +140,6 @@ export default function PhotoGallery() {
               <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent px-2 py-2">
                 <p className="text-white text-xs">{new Date(photo.created_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</p>
               </div>
-              {/* Delete — always visible on mobile, hover on desktop */}
               <button
                 onClick={() => setDeleteId(photo.id)}
                 className="absolute top-2 right-2 bg-black/50 hover:bg-red-500 text-white rounded-full p-1.5 transition-colors opacity-100 sm:opacity-0 sm:group-hover:opacity-100"
