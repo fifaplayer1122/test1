@@ -99,22 +99,25 @@ export default function TaskTable({ tasks, tab }) {
         onCancel={() => setDeleteId(null)}
       />
 
-      {/* Sort bar */}
-      <div className="flex items-center gap-2 mb-3 flex-wrap">
-        <span className="text-xs text-gray-400 font-medium">Sort:</span>
-        {SORT_OPTIONS.map(opt => (
-          <button
-            key={opt.value}
-            onClick={() => setSortBy(opt.value)}
-            className={`text-xs px-3 py-1 rounded-full border transition-colors ${
-              sortBy === opt.value
-                ? 'bg-blue-600 text-white border-blue-600'
-                : 'bg-white border border-gray-200 text-gray-600 hover:border-blue-300'
-            }`}
-          >
-            {opt.label}
-          </button>
-        ))}
+      {/* ── Header bar with sort ── */}
+      <div className="flex items-center justify-between mb-3 bg-white border border-gray-200 rounded-xl px-3 py-2 shadow-sm">
+        <span className="text-xs font-semibold text-gray-400 uppercase tracking-wide">{sorted.length} tasks</span>
+        <div className="flex items-center gap-1.5">
+          <span className="text-xs text-gray-400 mr-1">Sort</span>
+          {SORT_OPTIONS.map(opt => (
+            <button
+              key={opt.value}
+              onClick={() => setSortBy(opt.value)}
+              className={`text-xs px-2.5 py-1 rounded-lg border transition-colors font-medium ${
+                sortBy === opt.value
+                  ? 'bg-blue-600 text-white border-blue-600'
+                  : 'bg-gray-50 border-gray-200 text-gray-500 hover:border-blue-300 hover:text-blue-600'
+              }`}
+            >
+              {opt.label}
+            </button>
+          ))}
+        </div>
       </div>
 
       {/* ── Desktop table ── */}
@@ -188,68 +191,55 @@ export default function TaskTable({ tasks, tab }) {
         </table>
       </div>
 
-      {/* ── Mobile cards ── */}
-      <div className="md:hidden space-y-2.5">
+      {/* ── Mobile list (compact rows) ── */}
+      <div className="md:hidden bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm divide-y divide-gray-100">
         {sorted.map((task, idx) => {
           const isEditing = editingId === task.id;
           const cfg = PRIORITY_CONFIG[task.priority] || PRIORITY_CONFIG.medium;
           const etaInfo = formatEta(task.eta);
           return (
-            <div key={task.id} className={`bg-white border border-gray-200 rounded-xl border-l-4 ${cfg.border} shadow-sm`}>
+            <div key={task.id} className={`border-l-4 ${cfg.border}`}>
               {isEditing ? (
-                <div className="p-4 space-y-2.5">
+                <div className="p-3 space-y-2">
                   <input className={inputCls} value={editData.title} autoFocus onChange={e => setEditData(d => ({ ...d, title: e.target.value }))} placeholder="Task title" />
-                  <select className={`${inputCls} bg-white`} value={editData.priority} onChange={e => setEditData(d => ({ ...d, priority: e.target.value }))}>
-                    {PRIORITIES.map(p => <option key={p.value} value={p.value}>{p.label}</option>)}
-                  </select>
+                  <div className="flex gap-2">
+                    <select className={`${inputCls} flex-1 bg-white`} value={editData.priority} onChange={e => setEditData(d => ({ ...d, priority: e.target.value }))}>
+                      {PRIORITIES.map(p => <option key={p.value} value={p.value}>{p.label}</option>)}
+                    </select>
+                    <input type="date" className={`${inputCls} flex-1`} value={editData.eta} onChange={e => setEditData(d => ({ ...d, eta: e.target.value }))} />
+                  </div>
                   <input className={inputCls} placeholder="Notes (optional)" value={editData.notes} onChange={e => setEditData(d => ({ ...d, notes: e.target.value }))} />
-                  <input type="date" className={`${inputCls} w-full`} value={editData.eta} onChange={e => setEditData(d => ({ ...d, eta: e.target.value }))} />
-                  <div className="flex gap-2 pt-1">
-                    <button onClick={() => saveEdit(task.id)} className="flex-1 py-2 bg-blue-600 text-white text-sm rounded-lg font-medium">Save</button>
-                    <button onClick={cancelEdit} className="flex-1 py-2 bg-gray-100 text-gray-600 text-sm rounded-lg"><X size={14} className="inline mr-1" />Cancel</button>
+                  <div className="flex gap-2">
+                    <button onClick={() => saveEdit(task.id)} className="flex-1 py-2 bg-blue-600 text-white text-xs rounded-lg font-medium">Save</button>
+                    <button onClick={cancelEdit} className="flex-1 py-2 bg-gray-100 text-gray-600 text-xs rounded-lg">Cancel</button>
                   </div>
                 </div>
               ) : (
-                <div className="p-4">
-                  <div className="flex items-start justify-between gap-2 mb-2">
-                    <div className="flex-1 min-w-0">
-                      <p className="font-semibold text-gray-900 text-sm leading-snug">{idx + 1}. {task.title}</p>
-                      {task.notes && <p className="text-xs text-gray-400 mt-0.5 truncate">{task.notes}</p>}
-                      {etaInfo && (
-                        <p className={`text-xs font-medium mt-0.5 ${etaInfo.cls}`}>📅 {etaInfo.label}</p>
-                      )}
+                <div className="flex items-center gap-2 px-3 py-2.5">
+                  {/* Priority dot */}
+                  <span className={`w-2 h-2 rounded-full flex-shrink-0 ${cfg.dot}`} />
+
+                  {/* Title + meta */}
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-gray-900 leading-snug truncate">{task.title}</p>
+                    <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+                      {task.notes && <span className="text-xs text-gray-400 truncate max-w-[120px]">{task.notes}</span>}
+                      {etaInfo && <span className={`text-xs font-medium ${etaInfo.cls}`}>📅 {etaInfo.label}</span>}
                     </div>
-                    <span className={`flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-full flex-shrink-0 ${
-                      task.priority === 'very_high' ? 'bg-red-50 text-red-600' :
-                      task.priority === 'high'      ? 'bg-orange-50 text-orange-600' :
-                      task.priority === 'medium'    ? 'bg-yellow-50 text-yellow-700' :
-                                                     'bg-green-50 text-green-700'
-                    }`}>
-                      <span className={`w-1.5 h-1.5 rounded-full ${cfg.dot}`} />
-                      {cfg.label}
-                    </span>
                   </div>
-                  <div className="flex gap-1.5 pt-1 border-t border-gray-100">
+
+                  {/* Actions */}
+                  <div className="flex items-center gap-0.5 flex-shrink-0">
                     {tab === 'active' ? (
                       <>
-                        <button onClick={() => updateTask(task.id, { status: 'done' })} className="flex-1 flex items-center justify-center gap-1 py-1.5 rounded-lg bg-green-50 text-green-700 text-xs font-medium hover:bg-green-100">
-                          <Check size={13} /> Done
-                        </button>
-                        <button onClick={() => updateTask(task.id, { status: 'skip' })} className="flex-1 flex items-center justify-center gap-1 py-1.5 rounded-lg bg-yellow-50 text-yellow-700 text-xs font-medium hover:bg-yellow-100">
-                          <SkipForward size={13} /> Skip
-                        </button>
+                        <button onClick={() => updateTask(task.id, { status: 'done' })} className="w-7 h-7 flex items-center justify-center rounded-lg text-gray-400 hover:bg-green-50 hover:text-green-600"><Check size={14} /></button>
+                        <button onClick={() => updateTask(task.id, { status: 'skip' })} className="w-7 h-7 flex items-center justify-center rounded-lg text-gray-400 hover:bg-yellow-50 hover:text-yellow-600"><SkipForward size={14} /></button>
                       </>
                     ) : (
-                      <button onClick={() => updateTask(task.id, { status: 'todo' })} className="flex-1 flex items-center justify-center gap-1 py-1.5 rounded-lg bg-blue-50 text-blue-700 text-xs font-medium hover:bg-blue-100">
-                        <RotateCcw size={13} /> Restore
-                      </button>
+                      <button onClick={() => updateTask(task.id, { status: 'todo' })} className="w-7 h-7 flex items-center justify-center rounded-lg text-gray-400 hover:bg-blue-50 hover:text-blue-600"><RotateCcw size={14} /></button>
                     )}
-                    <button onClick={() => startEdit(task)} className="flex items-center justify-center w-9 h-8 rounded-lg bg-gray-50 text-gray-500 hover:bg-blue-50 hover:text-blue-600">
-                      <Pencil size={13} />
-                    </button>
-                    <button onClick={() => setDeleteId(task.id)} className="flex items-center justify-center w-9 h-8 rounded-lg bg-gray-50 text-gray-500 hover:bg-red-50 hover:text-red-600">
-                      <Trash2 size={13} />
-                    </button>
+                    <button onClick={() => startEdit(task)} className="w-7 h-7 flex items-center justify-center rounded-lg text-gray-400 hover:bg-blue-50 hover:text-blue-600"><Pencil size={14} /></button>
+                    <button onClick={() => setDeleteId(task.id)} className="w-7 h-7 flex items-center justify-center rounded-lg text-gray-400 hover:bg-red-50 hover:text-red-600"><Trash2 size={14} /></button>
                   </div>
                 </div>
               )}
