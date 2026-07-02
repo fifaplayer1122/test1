@@ -15,7 +15,6 @@ const NAV = [
   { id: 'priorities',label: 'Priorities',          icon: Zap             },
   { id: 'weekend',   label: 'Weekend Availability',icon: CalendarDays    },
   { id: 'workforce', label: 'Workforce',           icon: Users           },
-  { section: 'Other' },
   { id: 'photos',    label: 'Photos',              icon: Image           },
 ];
 

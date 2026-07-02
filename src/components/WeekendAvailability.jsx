@@ -424,44 +424,82 @@ export default function TeamHub({ defaultSection = 'priority' }) {
           {/* Admin grid view */}
           {isAdmin && (
             <>
-              {isAdmin && notSubmittedPriority.length > 0 && (
+              {notSubmittedPriority.length > 0 && (
                 <div className="flex items-start gap-2.5 bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 mb-4">
                   <AlertTriangle size={15} className="text-amber-500 mt-0.5 flex-shrink-0" />
                   <div>
-                    <p className="text-xs font-semibold text-amber-700 mb-0.5">Haven't submitted priority ({notSubmittedPriority.length})</p>
+                    <p className="text-xs font-semibold text-amber-700 mb-0.5">Pending submission ({notSubmittedPriority.length})</p>
                     <p className="text-xs text-amber-600">{notSubmittedPriority.join(', ')}</p>
                   </div>
                 </div>
               )}
-              <div className="grid sm:grid-cols-2 gap-3">
-                {data.members.filter(m => !ADMINS.includes(m)).map(member => {
+
+              {/* Priority list */}
+              <div className="space-y-3">
+                {data.members.filter(m => !ADMINS.includes(m)).map((member, idx) => {
                   const e = data.entries[member] || {};
                   const hasEntry = !!e.focus?.trim();
+                  const AVATAR_COLORS = [
+                    'from-blue-500 to-blue-700',
+                    'from-violet-500 to-violet-700',
+                    'from-emerald-500 to-emerald-700',
+                    'from-orange-400 to-orange-600',
+                    'from-pink-500 to-pink-700',
+                    'from-cyan-500 to-cyan-700',
+                    'from-rose-500 to-rose-700',
+                    'from-indigo-500 to-indigo-700',
+                    'from-teal-500 to-teal-700',
+                    'from-amber-500 to-amber-600',
+                    'from-fuchsia-500 to-fuchsia-700',
+                  ];
+                  const color = AVATAR_COLORS[idx % AVATAR_COLORS.length];
                   return (
-                    <div key={member} className={`bg-white border rounded-2xl p-4 shadow-sm transition-all ${e.waitingOnRavi ? 'border-red-200 ring-1 ring-red-100' : 'border-gray-200'}`}>
-                      <div className="flex items-center gap-2 mb-2.5">
-                        <span className="w-8 h-8 rounded-full bg-gray-100 text-gray-600 text-sm font-bold flex items-center justify-center flex-shrink-0">{member[0]}</span>
+                    <div key={member}
+                      onClick={() => canEdit(member) && setEditPriority(member)}
+                      className={`bg-white border rounded-2xl p-4 shadow-sm transition-all cursor-pointer hover:shadow-md ${
+                        e.waitingOnRavi ? 'border-red-200 ring-1 ring-red-100' : 'border-gray-100'
+                      }`}>
+                      <div className="flex items-center gap-3 mb-3">
+                        {/* Rank number */}
+                        <span className="text-xs font-bold text-gray-300 w-4 text-center flex-shrink-0">#{idx + 1}</span>
+                        {/* Avatar */}
+                        <span className={`w-9 h-9 rounded-full bg-gradient-to-br ${color} text-white text-sm font-bold flex items-center justify-center flex-shrink-0 shadow-sm`}>
+                          {member[0]}
+                        </span>
+                        {/* Name + time */}
                         <div className="flex-1 min-w-0">
-                          <p className="font-semibold text-sm text-gray-800">{member}</p>
-                          {e.focusUpdatedAt && <p className="text-xs text-gray-400">{timeAgo(e.focusUpdatedAt)}</p>}
+                          <p className="font-bold text-sm text-gray-900 leading-tight">{member}</p>
+                          {e.focusUpdatedAt
+                            ? <p className="text-xs text-gray-400 mt-0.5">Updated {timeAgo(e.focusUpdatedAt)}</p>
+                            : <p className="text-xs text-gray-300 mt-0.5">No update yet</p>}
                         </div>
-                        {e.waitingOnRavi && (
-                          <span className="flex items-center gap-1 text-xs bg-red-50 text-red-500 border border-red-100 px-2 py-0.5 rounded-full font-medium flex-shrink-0">
-                            <Bell size={11} />Waiting
-                          </span>
-                        )}
+                        {/* Badges */}
+                        <div className="flex items-center gap-1.5 flex-shrink-0">
+                          {e.waitingOnRavi && (
+                            <span className="flex items-center gap-1 text-xs bg-red-50 text-red-500 border border-red-200 px-2 py-1 rounded-full font-semibold">
+                              <Bell size={10} />Needs Ravi
+                            </span>
+                          )}
+                          {!hasEntry && (
+                            <span className="text-xs bg-amber-50 text-amber-500 border border-amber-200 px-2 py-1 rounded-full font-semibold">Pending</span>
+                          )}
+                        </div>
                       </div>
+
                       {hasEntry ? (
-                        <div>
-                          <p className="text-sm text-gray-600 leading-relaxed">{e.focus}</p>
+                        <div className="ml-7 pl-3 border-l-2 border-gray-100">
+                          <p className="text-sm text-gray-700 leading-relaxed">{e.focus}</p>
                           {e.waitingOnRavi && e.waitReason && (
-                            <div className="mt-2 bg-red-50 border border-red-100 rounded-xl px-3 py-2">
-                              <p className="text-xs text-red-600">{e.waitReason}</p>
+                            <div className="mt-2 flex items-start gap-2 bg-red-50 border border-red-100 rounded-xl px-3 py-2">
+                              <Bell size={12} className="text-red-400 mt-0.5 flex-shrink-0" />
+                              <p className="text-xs text-red-600 leading-relaxed">{e.waitReason}</p>
                             </div>
                           )}
                         </div>
                       ) : (
-                        <p className="text-xs text-gray-300 italic">No update submitted</p>
+                        <div className="ml-7 pl-3 border-l-2 border-dashed border-gray-100">
+                          <p className="text-xs text-gray-300 italic">Tap to add their priority update</p>
+                        </div>
                       )}
                     </div>
                   );

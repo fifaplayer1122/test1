@@ -22,9 +22,9 @@ const NAV = [
       { id: 'priorities', label: 'Priorities',           icon: Zap           },
       { id: 'weekend',    label: 'Weekend Availability', icon: CalendarDays  },
       { id: 'workforce',  label: 'Workforce',            icon: Users         },
+      { id: 'photos',     label: 'Photos',               icon: Image         },
     ],
   },
-  { id: 'photos', label: 'Photos', icon: Image },
 ];
 
 export default function MobileNav({ activeTab, onTabChange, counts }) {
