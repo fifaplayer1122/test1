@@ -1,115 +1,148 @@
 import { useState } from 'react';
 import {
-  LayoutDashboard, CheckSquare, MessageSquare, CalendarDays,
-  MoreHorizontal, Users, CheckCircle, SkipForward, Image, Zap, X,
+  LayoutDashboard, CheckSquare, CheckCircle, SkipForward,
+  MessageSquare, CalendarDays, Zap, Users, Image,
+  ChevronDown, X, Menu,
 } from 'lucide-react';
 
-const PRIMARY = [
-  { id: 'dashboard',  label: 'Home',     icon: LayoutDashboard },
-  { id: 'active',     label: 'Tasks',    icon: CheckSquare     },
-  { id: 'updates',    label: 'Updates',  icon: MessageSquare   },
-  { id: 'weekend',    label: 'Weekend',  icon: CalendarDays    },
-];
-
-const MORE = [
-  { id: 'priorities', label: 'Priorities', icon: Zap         },
-  { id: 'done',       label: 'Done',       icon: CheckCircle  },
-  { id: 'skipped',    label: 'Skipped',    icon: SkipForward  },
-  { id: 'workforce',  label: 'Workforce',  icon: Users        },
-  { id: 'photos',     label: 'Photos',     icon: Image        },
+const NAV = [
+  { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
+  {
+    section: 'Tasks',
+    children: [
+      { id: 'active',   label: 'Active',   icon: CheckSquare  },
+      { id: 'done',     label: 'Done',     icon: CheckCircle  },
+      { id: 'skipped',  label: 'Skipped',  icon: SkipForward  },
+    ],
+  },
+  {
+    section: 'Team',
+    children: [
+      { id: 'updates',    label: 'Team Updates',         icon: MessageSquare },
+      { id: 'priorities', label: 'Priorities',           icon: Zap           },
+      { id: 'weekend',    label: 'Weekend Availability', icon: CalendarDays  },
+      { id: 'workforce',  label: 'Workforce',            icon: Users         },
+    ],
+  },
+  { id: 'photos', label: 'Photos', icon: Image },
 ];
 
 export default function MobileNav({ activeTab, onTabChange, counts }) {
-  const [showMore, setShowMore] = useState(false);
-  const isMoreActive = MORE.some(t => t.id === activeTab);
+  const [open, setOpen]       = useState(false);
+  const [expanded, setExpanded] = useState({ Tasks: true, Team: true });
 
-  const NAV_HEIGHT = 68;
+  const navigate = (id) => { onTabChange(id); setOpen(false); };
+  const toggle   = (section) => setExpanded(e => ({ ...e, [section]: !e[section] }));
 
   return (
     <>
-      {/* More drawer overlay */}
+      {/* Hamburger button — rendered into the header via portal-like prop, but we just export a trigger */}
+      <button
+        id="mobile-hamburger"
+        onClick={() => setOpen(true)}
+        className="md:hidden w-9 h-9 flex items-center justify-center rounded-xl text-gray-600 hover:bg-gray-100 active:scale-90 transition-all"
+        aria-label="Open menu"
+      >
+        <Menu size={22} strokeWidth={2} />
+      </button>
+
+      {/* Overlay */}
       <div
-        className={`md:hidden fixed inset-0 z-40 transition-all duration-200 ${showMore ? 'pointer-events-auto' : 'pointer-events-none'}`}
-        onClick={() => setShowMore(false)}
+        className={`md:hidden fixed inset-0 z-50 transition-all duration-300 ${open ? 'pointer-events-auto' : 'pointer-events-none'}`}
       >
         {/* Backdrop */}
-        <div className={`absolute inset-0 bg-black/30 transition-opacity duration-200 ${showMore ? 'opacity-100' : 'opacity-0'}`} />
-
-        {/* Drawer panel */}
         <div
-          className={`absolute left-0 right-0 bg-white rounded-t-3xl shadow-2xl transition-transform duration-300 ease-out ${showMore ? 'translate-y-0' : 'translate-y-full'}`}
-          style={{ bottom: NAV_HEIGHT }}
-          onClick={e => e.stopPropagation()}
+          className={`absolute inset-0 bg-black/40 transition-opacity duration-300 ${open ? 'opacity-100' : 'opacity-0'}`}
+          onClick={() => setOpen(false)}
+        />
+
+        {/* Slide-in panel from right */}
+        <div
+          className={`absolute top-0 right-0 bottom-0 w-[80vw] max-w-xs bg-white shadow-2xl flex flex-col transition-transform duration-300 ease-out ${open ? 'translate-x-0' : 'translate-x-full'}`}
         >
-          {/* Handle + header */}
-          <div className="flex items-center justify-between px-5 pt-4 pb-2">
-            <div className="w-10 h-1 bg-gray-300 rounded-full mx-auto absolute left-1/2 -translate-x-1/2 top-3" />
-            <span className="text-sm font-semibold text-gray-700 mt-2">More</span>
-            <button onClick={() => setShowMore(false)} className="w-7 h-7 rounded-full bg-gray-100 flex items-center justify-center text-gray-500 mt-2">
-              <X size={14} />
+          {/* Panel header */}
+          <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
+            <img src="/logo.svg" alt="SmartDocs" className="h-8 w-auto" />
+            <button
+              onClick={() => setOpen(false)}
+              className="w-9 h-9 flex items-center justify-center rounded-full bg-gray-100 text-gray-500 hover:bg-gray-200 active:scale-90 transition-all"
+            >
+              <X size={18} />
             </button>
           </div>
 
-          <div className="grid grid-cols-4 gap-2 px-4 pb-5 pt-1">
-            {MORE.map(tab => {
-              const Icon = tab.icon;
-              const isActive = activeTab === tab.id;
-              const count = counts?.[tab.id];
+          {/* Nav items */}
+          <nav className="flex-1 overflow-y-auto py-3 px-3">
+            {NAV.map((item, i) => {
+              if (item.id) {
+                // Top-level single item
+                const Icon = item.icon;
+                const isActive = activeTab === item.id;
+                return (
+                  <button
+                    key={item.id}
+                    onClick={() => navigate(item.id)}
+                    className={`w-full flex items-center gap-3 px-4 py-3.5 rounded-2xl text-sm font-semibold mb-1 transition-all active:scale-95 ${
+                      isActive ? 'bg-blue-600 text-white shadow-sm' : 'text-gray-700 hover:bg-gray-50'
+                    }`}
+                  >
+                    <Icon size={18} strokeWidth={isActive ? 2.5 : 2} />
+                    {item.label}
+                  </button>
+                );
+              }
+
+              // Expandable section
+              const isOpen = expanded[item.section];
+              const anyChildActive = item.children.some(c => c.id === activeTab);
               return (
-                <button key={tab.id} onClick={() => { onTabChange(tab.id); setShowMore(false); }}
-                  className={`flex flex-col items-center gap-1.5 py-3.5 rounded-2xl text-xs font-medium transition-all active:scale-95 ${
-                    isActive ? 'bg-blue-600 text-white shadow-sm' : 'bg-gray-50 text-gray-600 hover:bg-gray-100'
-                  }`}>
-                  <div className="relative">
-                    <Icon size={22} />
-                    {count > 0 && (
-                      <span className={`absolute -top-1.5 -right-2.5 text-xs rounded-full w-4 h-4 flex items-center justify-center leading-none font-bold ${isActive ? 'bg-white text-blue-600' : 'bg-blue-600 text-white'}`}>{count}</span>
-                    )}
-                  </div>
-                  {tab.label}
-                </button>
+                <div key={item.section} className="mb-1">
+                  <button
+                    onClick={() => toggle(item.section)}
+                    className={`w-full flex items-center justify-between px-4 py-3 rounded-2xl text-sm font-bold transition-all ${
+                      anyChildActive && !isOpen ? 'text-blue-600' : 'text-gray-400'
+                    }`}
+                  >
+                    <span className="uppercase tracking-wider text-xs">{item.section}</span>
+                    <ChevronDown
+                      size={16}
+                      strokeWidth={2.5}
+                      className={`transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`}
+                    />
+                  </button>
+
+                  {isOpen && (
+                    <div className="ml-2 space-y-0.5">
+                      {item.children.map(child => {
+                        const Icon = child.icon;
+                        const isActive = activeTab === child.id;
+                        const count = counts?.[child.id];
+                        return (
+                          <button
+                            key={child.id}
+                            onClick={() => navigate(child.id)}
+                            className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all active:scale-95 ${
+                              isActive ? 'bg-blue-600 text-white shadow-sm' : 'text-gray-600 hover:bg-gray-50'
+                            }`}
+                          >
+                            <Icon size={17} strokeWidth={isActive ? 2.5 : 2} />
+                            <span className="flex-1 text-left">{child.label}</span>
+                            {count > 0 && (
+                              <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${isActive ? 'bg-white/25 text-white' : 'bg-gray-100 text-gray-500'}`}>
+                                {count}
+                              </span>
+                            )}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
               );
             })}
-          </div>
+          </nav>
         </div>
       </div>
-
-      {/* Bottom nav bar */}
-      <nav
-        className="md:hidden fixed bottom-0 left-0 right-0 z-30 bg-white border-t border-gray-100 flex"
-        style={{ paddingBottom: 'env(safe-area-inset-bottom)', height: NAV_HEIGHT + 'px' }}
-      >
-        {PRIMARY.map(tab => {
-          const Icon = tab.icon;
-          const isActive = activeTab === tab.id;
-          const count = counts?.[tab.id];
-          return (
-            <button key={tab.id} onClick={() => { onTabChange(tab.id); setShowMore(false); }}
-              className={`flex-1 flex flex-col items-center justify-center gap-1.5 text-xs font-semibold transition-all active:scale-90 ${
-                isActive ? 'text-blue-600' : 'text-gray-400'
-              }`}>
-              <div className="relative">
-                <div className={`w-12 h-8 flex items-center justify-center rounded-2xl transition-all duration-200 ${isActive ? 'bg-blue-100' : ''}`}>
-                  <Icon size={21} strokeWidth={isActive ? 2.5 : 1.8} />
-                </div>
-                {count > 0 && (
-                  <span className="absolute -top-1 -right-0.5 text-xs bg-blue-600 text-white rounded-full w-4 h-4 flex items-center justify-center leading-none font-bold">{count}</span>
-                )}
-              </div>
-              {tab.label}
-            </button>
-          );
-        })}
-        <button onClick={() => setShowMore(v => !v)}
-          className={`flex-1 flex flex-col items-center justify-center gap-1.5 text-xs font-semibold transition-all active:scale-90 ${
-            showMore || isMoreActive ? 'text-blue-600' : 'text-gray-400'
-          }`}>
-          <div className={`w-12 h-8 flex items-center justify-center rounded-2xl transition-all duration-200 ${showMore || isMoreActive ? 'bg-blue-100' : ''}`}>
-            <MoreHorizontal size={21} strokeWidth={showMore || isMoreActive ? 2.5 : 1.8} />
-          </div>
-          More
-        </button>
-      </nav>
     </>
   );
 }

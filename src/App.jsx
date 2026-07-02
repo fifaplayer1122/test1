@@ -45,21 +45,20 @@ function AppInner() {
 
       <div className="flex-1 flex flex-col min-w-0">
         {/* Top bar */}
-        <header className="bg-white border-b border-gray-200 px-4 sm:px-6 py-3 flex items-center justify-between sticky top-0 z-20">
-          {/* Mobile: logo | Desktop: page title */}
-          <img src="/logo.svg" alt="SmartDocs" className="h-7 w-auto md:hidden" />
-          <h1 className="hidden md:block text-base font-bold text-gray-900">{PAGE_TITLES[activeTab] || 'Dashboard'}</h1>
-          <div className="md:hidden flex-1 text-center">
-            <span className="text-sm font-semibold text-gray-700">{PAGE_TITLES[activeTab] || 'Dashboard'}</span>
-          </div>
-          <div className="flex items-center gap-2">
+        <header className="bg-white border-b border-gray-200 px-4 sm:px-6 py-3 flex items-center gap-3 sticky top-0 z-20">
+          {/* Mobile: logo left + title center + hamburger right */}
+          <img src="/logo.svg" alt="SmartDocs" className="h-7 w-auto md:hidden flex-shrink-0" />
+          <h1 className="hidden md:block text-base font-bold text-gray-900 flex-1">{PAGE_TITLES[activeTab] || 'Dashboard'}</h1>
+          <span className="md:hidden flex-1 text-center text-sm font-semibold text-gray-700">{PAGE_TITLES[activeTab] || 'Dashboard'}</span>
+          <div className="hidden md:flex items-center gap-2">
             <div className="w-2 h-2 rounded-full bg-green-400" />
-            <span className="text-xs text-gray-400 font-medium hidden sm:inline">SmartDocs</span>
+            <span className="text-xs text-gray-400 font-medium">SmartDocs</span>
           </div>
+          <MobileNav activeTab={activeTab} onTabChange={setActiveTab} counts={counts} />
         </header>
 
         {/* Content */}
-        <main className="flex-1 px-4 py-5 sm:px-6 sm:py-6 pb-28 md:pb-6">
+        <main className="flex-1 px-4 py-5 sm:px-6 sm:py-6">
           {isLoading ? (
             <Spinner />
           ) : activeTab === 'dashboard' ? (
@@ -82,8 +81,6 @@ function AppInner() {
           )}
         </main>
       </div>
-
-      <MobileNav activeTab={activeTab} onTabChange={setActiveTab} counts={counts} />
     </div>
   );
 }

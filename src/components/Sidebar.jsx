@@ -29,9 +29,9 @@ export default function Sidebar({ activeTab, onTabChange, counts }) {
   return (
     <aside className="hidden md:flex flex-col w-60 bg-white border-r border-gray-200 min-h-screen flex-shrink-0">
       {/* Logo */}
-      <div className="px-5 py-5 border-b border-gray-100">
-        <img src="/logo.svg" alt="SmartDocs" className="h-10 w-auto" />
-        <p className="text-xs text-gray-400 mt-1.5 font-medium tracking-wide">Command Center</p>
+      <div className="px-5 py-6 border-b border-gray-100">
+        <img src="/logo.svg" alt="SmartDocs" className="h-14 w-auto" />
+        <p className="text-xs text-gray-400 mt-2 font-medium tracking-wide">Command Center</p>
       </div>
 
       {/* Nav */}
