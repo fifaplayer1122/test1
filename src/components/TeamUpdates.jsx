@@ -107,13 +107,13 @@ export default function TeamUpdates() {
             onKeyDown={e => { if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) post(); }}
           />
 
-          <div className="flex items-center gap-2 flex-wrap">
-            <div className="flex gap-1.5 flex-wrap flex-1">
+          <div className="flex items-center gap-2">
+            <div className="flex gap-1.5 overflow-x-auto flex-1 pb-0.5 scrollbar-hide">
               {Object.entries(CATEGORIES).map(([key, cat]) => {
                 const Icon = CAT_ICONS[key];
                 return (
                   <button key={key} onClick={() => setCategory(key)}
-                    className={`flex items-center gap-1 text-xs font-medium px-2.5 py-1.5 rounded-lg border transition-all ${
+                    className={`flex items-center gap-1 text-xs font-medium px-3 py-2 rounded-xl border transition-all flex-shrink-0 ${
                       category === key ? cat.color + ' border-current' : 'border-gray-200 text-gray-500 hover:border-gray-300'
                     }`}>
                     <Icon size={11} />{cat.label}
@@ -124,7 +124,7 @@ export default function TeamUpdates() {
             <button
               onClick={post}
               disabled={!text.trim()}
-              className="flex items-center gap-1.5 bg-blue-600 text-white text-sm font-medium px-4 py-1.5 rounded-xl hover:bg-blue-700 disabled:opacity-40 transition-colors flex-shrink-0"
+              className="flex items-center gap-1.5 bg-blue-600 text-white text-sm font-semibold px-4 py-2 rounded-xl hover:bg-blue-700 disabled:opacity-40 transition-colors flex-shrink-0"
             >
               <Send size={13} />Post
             </button>

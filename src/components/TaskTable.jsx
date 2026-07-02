@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Check, SkipForward, Pencil, Trash2, RotateCcw, X } from 'lucide-react';
+import { Check, SkipForward, Pencil, Trash2, RotateCcw, X, ChevronRight } from 'lucide-react';
 import { useQueryClient } from '@tanstack/react-query';
 import { getTasks, saveTasks } from '../lib/storage';
 import { PRIORITY_CONFIG } from '../lib/utils';
@@ -80,6 +80,10 @@ export default function TaskTable({ tasks, tab }) {
   const startEdit  = (task) => { setEditingId(task.id); setEditData({ title: task.title, priority: task.priority, notes: task.notes || '', eta: task.eta || '' }); };
   const saveEdit   = (id) => { if (!editData.title?.trim()) return; updateTask(id, { ...editData, eta: editData.eta || undefined }); setEditingId(null); };
   const cancelEdit = () => setEditingId(null);
+
+  const [sheetTask, setSheetTask] = useState(null);
+
+  const sheetAction = (fn) => { fn(); setSheetTask(null); };
 
   if (sorted.length === 0) {
     return (
@@ -191,9 +195,9 @@ export default function TaskTable({ tasks, tab }) {
         </table>
       </div>
 
-      {/* ── Mobile list (compact rows) ── */}
+      {/* ── Mobile list (tap row → action sheet) ── */}
       <div className="md:hidden bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm divide-y divide-gray-100">
-        {sorted.map((task, idx) => {
+        {sorted.map((task) => {
           const isEditing = editingId === task.id;
           const cfg = PRIORITY_CONFIG[task.priority] || PRIORITY_CONFIG.medium;
           const etaInfo = formatEta(task.eta);
@@ -210,43 +214,74 @@ export default function TaskTable({ tasks, tab }) {
                   </div>
                   <input className={inputCls} placeholder="Notes (optional)" value={editData.notes} onChange={e => setEditData(d => ({ ...d, notes: e.target.value }))} />
                   <div className="flex gap-2">
-                    <button onClick={() => saveEdit(task.id)} className="flex-1 py-2 bg-blue-600 text-white text-xs rounded-lg font-medium">Save</button>
-                    <button onClick={cancelEdit} className="flex-1 py-2 bg-gray-100 text-gray-600 text-xs rounded-lg">Cancel</button>
+                    <button onClick={() => saveEdit(task.id)} className="flex-1 py-2.5 bg-blue-600 text-white text-sm rounded-xl font-medium">Save</button>
+                    <button onClick={cancelEdit} className="flex-1 py-2.5 bg-gray-100 text-gray-600 text-sm rounded-xl">Cancel</button>
                   </div>
                 </div>
               ) : (
-                <div className="flex items-center gap-2 px-3 py-2.5">
-                  {/* Priority dot */}
-                  <span className={`w-2 h-2 rounded-full flex-shrink-0 ${cfg.dot}`} />
-
-                  {/* Title + meta */}
+                <button
+                  className="w-full flex items-center gap-3 px-4 py-3.5 text-left active:bg-gray-50 transition-colors"
+                  onClick={() => setSheetTask(task)}
+                >
+                  <span className={`w-2.5 h-2.5 rounded-full flex-shrink-0 ${cfg.dot}`} />
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-gray-900 leading-snug truncate">{task.title}</p>
-                    <div className="flex items-center gap-2 mt-0.5 flex-wrap">
-                      {task.notes && <span className="text-xs text-gray-400 truncate max-w-[120px]">{task.notes}</span>}
+                    <p className="text-sm font-medium text-gray-900 leading-snug">{task.title}</p>
+                    <div className="flex items-center gap-2 mt-0.5">
+                      {task.notes && <span className="text-xs text-gray-400 truncate max-w-[140px]">{task.notes}</span>}
                       {etaInfo && <span className={`text-xs font-medium ${etaInfo.cls}`}>📅 {etaInfo.label}</span>}
                     </div>
                   </div>
-
-                  {/* Actions */}
-                  <div className="flex items-center gap-0.5 flex-shrink-0">
-                    {tab === 'active' ? (
-                      <>
-                        <button onClick={() => updateTask(task.id, { status: 'done' })} className="w-7 h-7 flex items-center justify-center rounded-lg text-gray-400 hover:bg-green-50 hover:text-green-600"><Check size={14} /></button>
-                        <button onClick={() => updateTask(task.id, { status: 'skip' })} className="w-7 h-7 flex items-center justify-center rounded-lg text-gray-400 hover:bg-yellow-50 hover:text-yellow-600"><SkipForward size={14} /></button>
-                      </>
-                    ) : (
-                      <button onClick={() => updateTask(task.id, { status: 'todo' })} className="w-7 h-7 flex items-center justify-center rounded-lg text-gray-400 hover:bg-blue-50 hover:text-blue-600"><RotateCcw size={14} /></button>
-                    )}
-                    <button onClick={() => startEdit(task)} className="w-7 h-7 flex items-center justify-center rounded-lg text-gray-400 hover:bg-blue-50 hover:text-blue-600"><Pencil size={14} /></button>
-                    <button onClick={() => setDeleteId(task.id)} className="w-7 h-7 flex items-center justify-center rounded-lg text-gray-400 hover:bg-red-50 hover:text-red-600"><Trash2 size={14} /></button>
-                  </div>
-                </div>
+                  <ChevronRight size={15} className="text-gray-300 flex-shrink-0" />
+                </button>
               )}
             </div>
           );
         })}
       </div>
+
+      {/* ── Mobile action sheet ── */}
+      {sheetTask && (
+        <div className="md:hidden fixed inset-0 z-50" onClick={() => setSheetTask(null)}>
+          <div className="absolute inset-0 bg-black/40" />
+          <div className="absolute bottom-0 left-0 right-0 bg-white rounded-t-3xl shadow-2xl pb-safe" onClick={e => e.stopPropagation()} style={{ paddingBottom: 'max(env(safe-area-inset-bottom), 16px)' }}>
+            <div className="w-10 h-1 bg-gray-300 rounded-full mx-auto mt-3 mb-4" />
+            <div className="px-5 mb-4">
+              <div className="flex items-center gap-2.5">
+                <span className={`w-2.5 h-2.5 rounded-full flex-shrink-0 ${(PRIORITY_CONFIG[sheetTask.priority] || PRIORITY_CONFIG.medium).dot}`} />
+                <p className="text-base font-semibold text-gray-900 leading-tight">{sheetTask.title}</p>
+              </div>
+              {sheetTask.notes && <p className="text-sm text-gray-400 mt-1 pl-5">{sheetTask.notes}</p>}
+            </div>
+            <div className="px-4 space-y-2">
+              {tab === 'active' ? (
+                <>
+                  <button onClick={() => sheetAction(() => updateTask(sheetTask.id, { status: 'done' }))}
+                    className="w-full flex items-center gap-3 px-4 py-4 rounded-2xl bg-green-50 text-green-700 font-semibold text-sm active:bg-green-100">
+                    <Check size={20} /> Mark as Done
+                  </button>
+                  <button onClick={() => sheetAction(() => updateTask(sheetTask.id, { status: 'skip' }))}
+                    className="w-full flex items-center gap-3 px-4 py-4 rounded-2xl bg-yellow-50 text-yellow-700 font-semibold text-sm active:bg-yellow-100">
+                    <SkipForward size={20} /> Skip
+                  </button>
+                </>
+              ) : (
+                <button onClick={() => sheetAction(() => updateTask(sheetTask.id, { status: 'todo' }))}
+                  className="w-full flex items-center gap-3 px-4 py-4 rounded-2xl bg-blue-50 text-blue-700 font-semibold text-sm active:bg-blue-100">
+                  <RotateCcw size={20} /> Restore to Active
+                </button>
+              )}
+              <button onClick={() => sheetAction(() => startEdit(sheetTask))}
+                className="w-full flex items-center gap-3 px-4 py-4 rounded-2xl bg-gray-50 text-gray-700 font-semibold text-sm active:bg-gray-100">
+                <Pencil size={20} /> Edit Task
+              </button>
+              <button onClick={() => sheetAction(() => setDeleteId(sheetTask.id))}
+                className="w-full flex items-center gap-3 px-4 py-4 rounded-2xl bg-red-50 text-red-600 font-semibold text-sm active:bg-red-100">
+                <Trash2 size={20} /> Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 }
