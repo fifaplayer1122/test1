@@ -6,6 +6,7 @@ import AddTaskForm from './components/AddTaskForm';
 import TaskTable from './components/TaskTable';
 import PhotoGallery from './components/PhotoGallery';
 import WorkforceTab from './components/WorkforceTab';
+import WeekendAvailability from './components/WeekendAvailability';
 import Dashboard from './components/Dashboard';
 import AuthGate from './components/AuthGate';
 import Spinner from './components/Spinner';
@@ -38,6 +39,8 @@ function AppInner() {
           <PhotoGallery />
         ) : activeTab === 'workforce' ? (
           <WorkforceTab />
+        ) : activeTab === 'weekend' ? (
+          <WeekendAvailability />
         ) : (
           <>
             {activeTab === 'active' && <AddTaskForm />}

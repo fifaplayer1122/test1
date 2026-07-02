@@ -1,4 +1,4 @@
-import { LayoutDashboard, CheckSquare, CheckCircle, SkipForward, Image, Users } from 'lucide-react';
+import { LayoutDashboard, CheckSquare, CheckCircle, SkipForward, Image, Users, CalendarDays } from 'lucide-react';
 
 const TABS = [
   { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
@@ -7,6 +7,7 @@ const TABS = [
   { id: 'skipped',   label: 'Skipped',   icon: SkipForward     },
   { id: 'photos',    label: 'Photos',    icon: Image           },
   { id: 'workforce', label: 'Workforce', icon: Users           },
+  { id: 'weekend',   label: 'Weekend',   icon: CalendarDays    },
 ];
 
 export default function TabBar({ activeTab, onTabChange, counts }) {
