@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Check, SkipForward, Pencil, Trash2, RotateCcw, X, ChevronRight } from 'lucide-react';
 import { useQueryClient } from '@tanstack/react-query';
-import { getTasks, saveTasks } from '../lib/storage';
+import { updateTask as dbUpdateTask, deleteTask as dbDeleteTask } from '../lib/storage';
 import { PRIORITY_CONFIG } from '../lib/utils';
 import ConfirmDialog from './ConfirmDialog';
 
@@ -75,8 +75,8 @@ export default function TaskTable({ tasks, tab }) {
   const sorted = sortTasks(tasks);
 
   const invalidate = () => queryClient.invalidateQueries({ queryKey: ['tasks'] });
-  const updateTask = (id, updates) => { saveTasks(getTasks().map(t => t.id === id ? { ...t, ...updates } : t)); invalidate(); };
-  const deleteTask = (id) => { saveTasks(getTasks().filter(t => t.id !== id)); invalidate(); };
+  const updateTask = (id, updates) => { dbUpdateTask(id, updates).then(invalidate); };
+  const deleteTask = (id) => { dbDeleteTask(id).then(invalidate); };
   const startEdit  = (task) => { setEditingId(task.id); setEditData({ title: task.title, priority: task.priority, notes: task.notes || '', eta: task.eta || '' }); };
   const saveEdit   = (id) => { if (!editData.title?.trim()) return; updateTask(id, { ...editData, eta: editData.eta || undefined }); setEditingId(null); };
   const cancelEdit = () => setEditingId(null);

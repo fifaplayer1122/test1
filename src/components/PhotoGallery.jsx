@@ -1,7 +1,7 @@
 import { useRef, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Trash2, ImagePlus, X, Loader2 } from 'lucide-react';
-import { getPhotos, savePhotos } from '../lib/storage';
+import { getPhotos, uploadPhoto, deletePhoto } from '../lib/storage';
 import ConfirmDialog from './ConfirmDialog';
 import Spinner from './Spinner';
 
@@ -20,8 +20,7 @@ function compressImage(file) {
         else { width = Math.round((width * MAX_PX) / height); height = MAX_PX; }
       }
       const canvas = document.createElement('canvas');
-      canvas.width = width;
-      canvas.height = height;
+      canvas.width = width; canvas.height = height;
       canvas.getContext('2d').drawImage(img, 0, 0, width, height);
       resolve(canvas.toDataURL('image/jpeg', QUALITY));
     };
@@ -34,9 +33,9 @@ export default function PhotoGallery() {
   const { data: photos = [], isLoading } = useQuery({ queryKey: ['photos'], queryFn: getPhotos });
   const queryClient = useQueryClient();
   const fileRef = useRef();
-  const [deleteId, setDeleteId]     = useState(null);
-  const [preview, setPreview]       = useState(null);
-  const [uploading, setUploading]   = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState(null); // { id, path }
+  const [preview, setPreview]           = useState(null);
+  const [uploading, setUploading]       = useState(false);
   const [uploadStatus, setUploadStatus] = useState('');
 
   const invalidate = () => queryClient.invalidateQueries({ queryKey: ['photos'] });
@@ -47,51 +46,39 @@ export default function PhotoGallery() {
     if (!files.length) return;
 
     setUploading(true);
-    setUploadStatus(`Processing 0 / ${files.length}…`);
-
-    const newPhotos = [];
     for (let i = 0; i < files.length; i++) {
+      setUploadStatus(`Uploading ${i + 1} / ${files.length}…`);
       try {
-        setUploadStatus(`Processing ${i + 1} / ${files.length}…`);
         const dataUrl = await compressImage(files[i]);
-        newPhotos.push({
-          id: crypto.randomUUID(),
-          image_url: dataUrl,
-          caption: '',
-          created_date: new Date().toISOString(),
-        });
-      } catch {
-        // skip unreadable files
+        await uploadPhoto(dataUrl, files[i].name);
+      } catch (err) {
+        console.error('Upload failed:', err);
       }
     }
-
-    try {
-      const current = getPhotos();
-      savePhotos([...current, ...newPhotos]);
-      invalidate();
-    } catch {
-      alert('Storage full — please delete some photos first.');
-    }
-
+    await invalidate();
     setUploading(false);
     setUploadStatus('');
   };
 
-  const deletePhoto = (id) => { savePhotos(getPhotos().filter(p => p.id !== id)); invalidate(); };
+  const confirmDelete = async () => {
+    if (!deleteTarget) return;
+    await deletePhoto(deleteTarget.id, deleteTarget.path);
+    setDeleteTarget(null);
+    invalidate();
+  };
 
   if (isLoading) return <Spinner />;
 
   return (
     <div>
       <ConfirmDialog
-        open={!!deleteId}
+        open={!!deleteTarget}
         title="Delete Photo"
         message="Delete this photo? This cannot be undone."
-        onConfirm={() => { deletePhoto(deleteId); setDeleteId(null); }}
-        onCancel={() => setDeleteId(null)}
+        onConfirm={confirmDelete}
+        onCancel={() => setDeleteTarget(null)}
       />
 
-      {/* Full-screen preview */}
       {preview && (
         <div className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center p-4" onClick={() => setPreview(null)}>
           <button className="absolute top-4 right-4 text-white bg-white/10 rounded-full p-2 hover:bg-white/20">
@@ -101,7 +88,6 @@ export default function PhotoGallery() {
         </div>
       )}
 
-      {/* Upload progress overlay */}
       {uploading && (
         <div className="fixed inset-0 z-50 bg-black/60 flex flex-col items-center justify-center gap-3">
           <Loader2 size={36} className="text-white animate-spin" />
@@ -138,10 +124,10 @@ export default function PhotoGallery() {
                 onClick={() => setPreview(photo.image_url)}
               />
               <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent px-2 py-2">
-                <p className="text-white text-xs">{new Date(photo.created_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</p>
+                <p className="text-white text-xs">{new Date(photo.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</p>
               </div>
               <button
-                onClick={() => setDeleteId(photo.id)}
+                onClick={() => setDeleteTarget({ id: photo.id, path: photo.path })}
                 className="absolute top-2 right-2 bg-black/50 hover:bg-red-500 text-white rounded-full p-1.5 transition-colors opacity-100 sm:opacity-0 sm:group-hover:opacity-100"
               >
                 <Trash2 size={13} />

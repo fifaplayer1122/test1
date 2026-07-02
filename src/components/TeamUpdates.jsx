@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useQueryClient, useQuery, useMutation } from '@tanstack/react-query';
 import { Send, Bell, Filter, Clock, Zap, MessageSquare, Info, ChevronDown } from 'lucide-react';
-import { getUpdates, saveUpdates, addUpdate, CATEGORIES } from '../lib/updatesStorage';
+import { getUpdates, addUpdate, CATEGORIES } from '../lib/updatesStorage';
 import { ADMINS, getIdentity } from '../lib/teamStorage';
 import { getAccount, CLIENT_ID } from '../lib/auth';
 
@@ -71,8 +71,8 @@ export default function TeamUpdates() {
 
   const post = () => {
     if (!text.trim() || !identity) return;
-    addUpdate({ id: crypto.randomUUID(), author: identity, text: text.trim(), category, createdAt: new Date().toISOString() });
-    qc.invalidateQueries({ queryKey: ['updates'] });
+    const entry = { id: crypto.randomUUID(), author: identity, text: text.trim(), category, createdAt: new Date().toISOString() };
+    addUpdate(entry).then(() => qc.invalidateQueries({ queryKey: ['updates'] }));
     setText('');
     setCategory('update');
   };

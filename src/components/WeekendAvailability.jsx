@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   CalendarDays, Clock, CheckCircle2, XCircle, Clock3, X,
   UserCircle2, Settings, Plus, Trash2, AlertTriangle,
@@ -7,7 +8,7 @@ import {
 import {
   ADMINS,
   getNextWeekend, fmtDate, fmtDay,
-  getWeekendData, saveWeekendData,
+  getWeekendData, upsertMemberEntry, saveMembers,
   getIdentity, saveIdentity,
 } from '../lib/teamStorage';
 import { getAccount, CLIENT_ID } from '../lib/auth';
@@ -264,7 +265,12 @@ function ManageMembersModal({ data, onSave, onClose }) {
    MAIN COMPONENT
 ══════════════════════════════════════════════════════ */
 export default function TeamHub({ defaultSection = 'priority' }) {
-  const [data, setData]         = useState(getWeekendData);
+  const qc = useQueryClient();
+  const { data = { members: [], entries: {} }, isLoading } = useQuery({
+    queryKey: ['teamHub'],
+    queryFn: getWeekendData,
+  });
+
   const [identity, setIdentity] = useState(resolveIdentity);
   const [activeTab, setActiveTab] = useState(defaultSection);
   const [showIdModal, setShowIdModal]     = useState(false);
@@ -280,21 +286,27 @@ export default function TeamHub({ defaultSection = 'priority' }) {
     if (!identity && !authEnabled) setShowIdModal(true);
   }, [identity, authEnabled]);
 
-  const persist = (next) => { setData(next); saveWeekendData(next); };
+  const invalidate = () => qc.invalidateQueries({ queryKey: ['teamHub'] });
 
-  const saveWeekend = (entry, nameOverride) => {
+  const saveWeekend = async (entry, nameOverride) => {
     const target = nameOverride || editWeekend;
     if (!target) return;
-    persist({ ...data, entries: { ...data.entries, [target]: { ...data.entries[target], ...entry } } });
+    await upsertMemberEntry(target, entry);
+    invalidate();
     setEditWeekend(null);
   };
 
-  const savePriority = (member, entry) => {
-    persist({ ...data, entries: { ...data.entries, [member]: { ...data.entries[member], ...entry } } });
+  const savePriority = async (member, entry) => {
+    await upsertMemberEntry(member, entry);
+    invalidate();
     setEditPriority(null);
   };
 
-  const handleManageSave = (members) => { persist({ ...data, members }); setShowManage(false); };
+  const handleManageSave = async (members) => {
+    await saveMembers(members);
+    invalidate();
+    setShowManage(false);
+  };
 
   const canEdit = (member) => isAdmin || identity === member;
 

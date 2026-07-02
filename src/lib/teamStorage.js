@@ -1,5 +1,4 @@
-const WEEKEND_KEY = 'ceo_weekend';
-const IDENTITY_KEY = 'ceo_team_identity';
+import { supabase } from './supabase';
 
 export const ADMINS = ['Ravi', 'Pranesh'];
 
@@ -29,20 +28,61 @@ export function fmtDay(d) {
   return d.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' });
 }
 
-export function getWeekendData() {
-  const raw = localStorage.getItem(WEEKEND_KEY);
-  if (raw) return JSON.parse(raw);
-  return { entries: {}, members: DEFAULT_MEMBERS };
+// Returns { members: string[], entries: { [name]: {...} } }
+export async function getWeekendData() {
+  const [membersRes, entriesRes] = await Promise.all([
+    supabase.from('members').select('name').order('sort_order'),
+    supabase.from('member_entries').select('*'),
+  ]);
+
+  const members = (membersRes.data || []).map(r => r.name);
+  const entries = {};
+  for (const row of (entriesRes.data || [])) {
+    entries[row.member_name] = {
+      sat:           row.sat || 'none',
+      satTime:       row.sat_time || '',
+      sun:           row.sun || 'none',
+      sunTime:       row.sun_time || '',
+      topics:        row.topics || '',
+      focus:         row.focus || '',
+      waitingOnRavi: row.waiting_on_ravi || false,
+      waitingReason: row.waiting_reason || '',
+      updatedAt:     row.updated_at,
+    };
+  }
+
+  return {
+    members: members.length ? members : DEFAULT_MEMBERS,
+    entries,
+  };
 }
 
-export function saveWeekendData(data) {
-  localStorage.setItem(WEEKEND_KEY, JSON.stringify(data));
+export async function upsertMemberEntry(memberName, updates) {
+  const row = { member_name: memberName, updated_at: new Date().toISOString() };
+  if (updates.sat           !== undefined) row.sat            = updates.sat;
+  if (updates.satTime       !== undefined) row.sat_time       = updates.satTime;
+  if (updates.sun           !== undefined) row.sun            = updates.sun;
+  if (updates.sunTime       !== undefined) row.sun_time       = updates.sunTime;
+  if (updates.topics        !== undefined) row.topics         = updates.topics;
+  if (updates.focus         !== undefined) row.focus          = updates.focus;
+  if (updates.waitingOnRavi !== undefined) row.waiting_on_ravi = updates.waitingOnRavi;
+  if (updates.waitingReason !== undefined) row.waiting_reason = updates.waitingReason;
+
+  const { error } = await supabase
+    .from('member_entries')
+    .upsert(row, { onConflict: 'member_name' });
+  if (error) throw error;
 }
 
-export function getIdentity() {
-  return localStorage.getItem(IDENTITY_KEY) || null;
+export async function saveMembers(memberNames) {
+  // Replace all members
+  await supabase.from('members').delete().neq('name', '');
+  const rows = memberNames.map((name, i) => ({ name, sort_order: i }));
+  const { error } = await supabase.from('members').insert(rows);
+  if (error) throw error;
 }
 
-export function saveIdentity(name) {
-  localStorage.setItem(IDENTITY_KEY, name);
-}
+// Identity stored locally (not synced — it's the user's own device preference)
+const IDENTITY_KEY = 'ceo_team_identity';
+export function getIdentity() { return localStorage.getItem(IDENTITY_KEY) || null; }
+export function saveIdentity(name) { localStorage.setItem(IDENTITY_KEY, name); }

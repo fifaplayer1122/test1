@@ -1,40 +1,85 @@
-const TASKS_KEY = 'ceo_tasks';
-const PHOTOS_KEY = 'ceo_photos';
-const WF_KEY = 'ceo_workforce';
+import { supabase } from './supabase';
 
-const DEFAULT_TASKS = [
-  { id: '1', title: 'to book a handyman for New Orleans booth build up', priority: 'very_high', status: 'todo', notes: 'Soon to be sorted' },
-  { id: '2', title: 'IBTTA Annual Meeting - Submit Call for Presentations', priority: 'very_high', status: 'todo', notes: 'July 10th Deadline', eta: '2026-07-10' },
-  { id: '3', title: 'Messaging of Maintenance IBTTA Conference', priority: 'high', status: 'todo', notes: 'Being worked on' },
-  { id: '4', title: 'Apple Developer - confirm organization address change', priority: 'high', status: 'todo', notes: '' },
-  { id: '5', title: 'US Visa Documents for Raghu', priority: 'high', status: 'todo', notes: 'Being worked on' },
-  { id: '6', title: 'Cancel OFAC API subscription', priority: 'high', status: 'todo', notes: '', eta: '2026-06-30' },
-  { id: '7', title: 'SWAGS - order Touchscreen cleaner, Electronic cleaner, dot.card', priority: 'medium', status: 'todo', notes: '' },
-  { id: '8', title: 'Post weekly on leadership channel (at least 1 per week)', priority: 'medium', status: 'todo', notes: '' },
-  { id: '9', title: 'Post 2-3 times weekly on notebook channel', priority: 'medium', status: 'todo', notes: '' },
-  { id: '10', title: 'Adobe $21.19 charge - review and action', priority: 'medium', status: 'todo', notes: '' },
-  { id: '11', title: 'NIGP Exhibitor Hub - August Summit registration (initial info added)', priority: 'medium', status: 'todo', notes: '' },
-  { id: '12', title: 'Register for APPA September Summit', priority: 'medium', status: 'todo', notes: '' },
-  { id: '13', title: 'Order dot.Cards - https://dotcards.net/products/black-card', priority: 'medium', status: 'todo', notes: '' },
-  { id: '14', title: 'Cancel LinkedIn Premium (personal + company)', priority: 'low', status: 'todo', notes: '2 weeks deadline', eta: '2026-07-13' },
-  { id: '15', title: 'IBTTA Maintenance Workshop (New Orleans) - Order table + ship by today', priority: 'very_high', status: 'done', notes: 'Working on' },
-  { id: '16', title: 'Merchology shirts - check arrival (today or tomorrow)', priority: 'high', status: 'done', notes: '' },
-  { id: '17', title: 'Register SmartDocs in Tennessee and Georgia', priority: 'high', status: 'done', notes: '' },
-  { id: '18', title: 'Get COI for JEA', priority: 'high', status: 'done', notes: '' },
-  { id: '19', title: 'Harvard Medical School AI certificate program - register', priority: 'medium', status: 'skip', notes: '' },
-];
+// ── Tasks ─────────────────────────────────────────────────────────────────────
 
-export const getTasks = () => {
-  const stored = localStorage.getItem(TASKS_KEY);
-  if (!stored) {
-    localStorage.setItem(TASKS_KEY, JSON.stringify(DEFAULT_TASKS));
-    return DEFAULT_TASKS;
-  }
-  return JSON.parse(stored);
-};
-export const saveTasks = (tasks) => localStorage.setItem(TASKS_KEY, JSON.stringify(tasks));
-export const getPhotos = () => JSON.parse(localStorage.getItem(PHOTOS_KEY) || '[]');
-export const savePhotos = (photos) => localStorage.setItem(PHOTOS_KEY, JSON.stringify(photos));
+export async function getTasks() {
+  const { data, error } = await supabase
+    .from('tasks')
+    .select('*')
+    .order('created_at', { ascending: true });
+  if (error) throw error;
+  return data || [];
+}
+
+export async function createTask(task) {
+  const { error } = await supabase.from('tasks').insert({
+    id:         task.id,
+    title:      task.title,
+    priority:   task.priority,
+    notes:      task.notes || '',
+    eta:        task.eta || null,
+    status:     task.status || 'todo',
+  });
+  if (error) throw error;
+}
+
+export async function updateTask(id, updates) {
+  const row = {};
+  if (updates.title    !== undefined) row.title    = updates.title;
+  if (updates.priority !== undefined) row.priority = updates.priority;
+  if (updates.notes    !== undefined) row.notes    = updates.notes;
+  if (updates.status   !== undefined) row.status   = updates.status;
+  if (updates.eta      !== undefined) row.eta      = updates.eta || null;
+  const { error } = await supabase.from('tasks').update(row).eq('id', id);
+  if (error) throw error;
+}
+
+export async function deleteTask(id) {
+  const { error } = await supabase.from('tasks').delete().eq('id', id);
+  if (error) throw error;
+}
+
+// ── Photos ────────────────────────────────────────────────────────────────────
+
+export async function getPhotos() {
+  const { data, error } = await supabase
+    .from('photos')
+    .select('*')
+    .order('created_at', { ascending: false });
+  if (error) throw error;
+  // Attach public URL to each row
+  return (data || []).map(p => ({
+    ...p,
+    image_url: supabase.storage.from('photos').getPublicUrl(p.path).data.publicUrl,
+  }));
+}
+
+export async function uploadPhoto(dataUrl, name) {
+  // Convert base64 dataURL → Blob
+  const res  = await fetch(dataUrl);
+  const blob = await res.blob();
+  const path = `${crypto.randomUUID()}.jpg`;
+
+  const { error: uploadError } = await supabase.storage
+    .from('photos')
+    .upload(path, blob, { contentType: 'image/jpeg', upsert: false });
+  if (uploadError) throw uploadError;
+
+  const { error: insertError } = await supabase.from('photos').insert({
+    name: name || '',
+    path,
+  });
+  if (insertError) throw insertError;
+}
+
+export async function deletePhoto(id, path) {
+  await supabase.storage.from('photos').remove([path]);
+  const { error } = await supabase.from('photos').delete().eq('id', id);
+  if (error) throw error;
+}
+
+// ── Workforce Report ──────────────────────────────────────────────────────────
+
 const DEFAULT_WORKFORCE = {
   summary: "Workforce Availability — June 26th till July 31st 2026",
   report_date: "June 25th 2026",
@@ -56,21 +101,23 @@ const DEFAULT_WORKFORCE = {
   ],
 };
 
-const WF_VERSION = 'v20260625';
+export async function getWorkforceReport() {
+  const { data, error } = await supabase
+    .from('workforce_report')
+    .select('data, version')
+    .eq('id', 1)
+    .single();
 
-export const getWorkforceReport = () => {
-  const stored = localStorage.getItem(WF_KEY);
-  if (!stored) {
-    localStorage.setItem(WF_KEY, JSON.stringify({ ...DEFAULT_WORKFORCE, _version: WF_VERSION }));
-    return DEFAULT_WORKFORCE;
-  }
-  const parsed = JSON.parse(stored);
-  // Always refresh seeded data when a new version is deployed
-  if (!parsed._user_edited && parsed._version !== WF_VERSION) {
-    const fresh = { ...DEFAULT_WORKFORCE, _version: WF_VERSION };
-    localStorage.setItem(WF_KEY, JSON.stringify(fresh));
-    return fresh;
-  }
-  return parsed;
-};
-export const saveWorkforceReport = (report) => localStorage.setItem(WF_KEY, JSON.stringify({ ...report, _user_edited: true, _version: WF_VERSION }));
+  if (error || !data) return DEFAULT_WORKFORCE;
+  return data.data;
+}
+
+export async function saveWorkforceReport(report) {
+  const { error } = await supabase.from('workforce_report').upsert({
+    id:      1,
+    data:    report,
+    version: 'v1',
+    updated_at: new Date().toISOString(),
+  });
+  if (error) throw error;
+}

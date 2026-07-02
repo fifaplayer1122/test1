@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Plus, Calendar } from 'lucide-react';
 import { useQueryClient } from '@tanstack/react-query';
-import { getTasks, saveTasks } from '../lib/storage';
+import { createTask } from '../lib/storage';
 
 const PRIORITIES = [
   { value: 'very_high', label: '🔴 Very High' },
@@ -21,17 +21,14 @@ export default function AddTaskForm() {
   const handleSubmit = (e) => {
     e.preventDefault();
     if (!title.trim()) return;
-    const tasks = getTasks();
-    saveTasks([...tasks, {
-      id: crypto.randomUUID(),
-      title: title.trim(),
+    createTask({
+      id:       crypto.randomUUID(),
+      title:    title.trim(),
       priority,
-      notes: notes.trim(),
-      eta: eta || undefined,
-      status: 'todo',
-      created_at: new Date().toISOString(),
-    }]);
-    queryClient.invalidateQueries({ queryKey: ['tasks'] });
+      notes:    notes.trim(),
+      eta:      eta || undefined,
+      status:   'todo',
+    }).then(() => queryClient.invalidateQueries({ queryKey: ['tasks'] }));
     setTitle(''); setNotes(''); setPriority('medium'); setEta(''); setOpen(false);
   };
 
