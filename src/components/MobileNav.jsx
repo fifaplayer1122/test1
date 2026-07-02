@@ -23,7 +23,7 @@ export default function MobileNav({ activeTab, onTabChange, counts }) {
   const [showMore, setShowMore] = useState(false);
   const isMoreActive = MORE.some(t => t.id === activeTab);
 
-  const NAV_HEIGHT = 60;
+  const NAV_HEIGHT = 68;
 
   return (
     <>
@@ -85,15 +85,15 @@ export default function MobileNav({ activeTab, onTabChange, counts }) {
           const count = counts?.[tab.id];
           return (
             <button key={tab.id} onClick={() => { onTabChange(tab.id); setShowMore(false); }}
-              className={`flex-1 flex flex-col items-center justify-center gap-1 text-xs font-medium transition-colors active:opacity-70 ${
+              className={`flex-1 flex flex-col items-center justify-center gap-1.5 text-xs font-semibold transition-all active:scale-90 ${
                 isActive ? 'text-blue-600' : 'text-gray-400'
               }`}>
               <div className="relative">
-                <div className={`p-1.5 rounded-xl transition-colors ${isActive ? 'bg-blue-50' : ''}`}>
-                  <Icon size={19} />
+                <div className={`w-12 h-8 flex items-center justify-center rounded-2xl transition-all duration-200 ${isActive ? 'bg-blue-100' : ''}`}>
+                  <Icon size={21} strokeWidth={isActive ? 2.5 : 1.8} />
                 </div>
                 {count > 0 && (
-                  <span className="absolute -top-1 -right-1 text-xs bg-blue-600 text-white rounded-full w-4 h-4 flex items-center justify-center leading-none font-bold">{count}</span>
+                  <span className="absolute -top-1 -right-0.5 text-xs bg-blue-600 text-white rounded-full w-4 h-4 flex items-center justify-center leading-none font-bold">{count}</span>
                 )}
               </div>
               {tab.label}
@@ -101,11 +101,11 @@ export default function MobileNav({ activeTab, onTabChange, counts }) {
           );
         })}
         <button onClick={() => setShowMore(v => !v)}
-          className={`flex-1 flex flex-col items-center justify-center gap-1 text-xs font-medium transition-colors active:opacity-70 ${
-            isMoreActive ? 'text-blue-600' : 'text-gray-400'
+          className={`flex-1 flex flex-col items-center justify-center gap-1.5 text-xs font-semibold transition-all active:scale-90 ${
+            showMore || isMoreActive ? 'text-blue-600' : 'text-gray-400'
           }`}>
-          <div className={`p-1.5 rounded-xl transition-colors ${showMore || isMoreActive ? 'bg-blue-50' : ''}`}>
-            <MoreHorizontal size={19} />
+          <div className={`w-12 h-8 flex items-center justify-center rounded-2xl transition-all duration-200 ${showMore || isMoreActive ? 'bg-blue-100' : ''}`}>
+            <MoreHorizontal size={21} strokeWidth={showMore || isMoreActive ? 2.5 : 1.8} />
           </div>
           More
         </button>
