@@ -6,7 +6,7 @@ export const ADMINS = ['Ravi', 'Pranesh'];
 export const DEFAULT_MEMBERS = [
   'Aditya Simhadri', 'Janvi', 'Pooja', 'Ramakrishna',
   'Sai Charan', 'Sai Varma', 'Sunil', 'Pranesh',
-  'Hitesh', 'Vibha', 'Raghu', 'Ravi',
+  'Hitesh', 'Vibha', 'Raghu',
 ];
 
 export function getNextWeekend() {

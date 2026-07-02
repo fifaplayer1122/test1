@@ -440,7 +440,7 @@ export default function TeamHub() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
-                {data.members.map(member => {
+                {data.members.filter(m => !ADMINS.includes(m)).map(member => {
                   const e = data.entries[member] || {};
                   const isMe = identity === member;
                   const editable = canEdit(member);
@@ -466,7 +466,7 @@ export default function TeamHub() {
 
           {/* Mobile cards */}
           <div className="md:hidden space-y-2">
-            {data.members.map(member => {
+            {data.members.filter(m => !ADMINS.includes(m)).map(member => {
               const e = data.entries[member] || {};
               const isMe = identity === member;
               const editable = canEdit(member);
