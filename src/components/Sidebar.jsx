@@ -1,23 +1,45 @@
 import {
   LayoutDashboard, CheckSquare, CheckCircle, SkipForward,
-  Image, Users, CalendarDays, MessageSquare, LogOut,
+  Image, Users, CalendarDays, MessageSquare, LogOut, Zap,
 } from 'lucide-react';
 import { logout, getAccount, CLIENT_ID } from '../lib/auth';
 
 const NAV = [
-  { section: null },
-  { id: 'dashboard', label: 'Dashboard',    icon: LayoutDashboard },
+  { id: 'dashboard', label: 'Dashboard',          icon: LayoutDashboard },
   { section: 'Tasks' },
-  { id: 'active',    label: 'Active',        icon: CheckSquare     },
-  { id: 'done',      label: 'Done',          icon: CheckCircle     },
-  { id: 'skipped',   label: 'Skipped',       icon: SkipForward     },
+  { id: 'active',    label: 'Active',              icon: CheckSquare     },
+  { id: 'done',      label: 'Done',                icon: CheckCircle     },
+  { id: 'skipped',   label: 'Skipped',             icon: SkipForward     },
   { section: 'Team' },
-  { id: 'updates',   label: 'Team Updates',  icon: MessageSquare   },
-  { id: 'weekend',   label: 'Team Hub',      icon: CalendarDays    },
-  { id: 'workforce', label: 'Workforce',     icon: Users           },
+  { id: 'updates',   label: 'Team Updates',        icon: MessageSquare   },
+  { id: 'priorities',label: 'Priorities',          icon: Zap             },
+  { id: 'weekend',   label: 'Weekend Availability',icon: CalendarDays    },
+  { id: 'workforce', label: 'Workforce',           icon: Users           },
   { section: 'Other' },
-  { id: 'photos',    label: 'Photos',        icon: Image           },
+  { id: 'photos',    label: 'Photos',              icon: Image           },
 ];
+
+function SmartDocsLogo() {
+  return (
+    <svg viewBox="0 0 120 32" fill="none" xmlns="http://www.w3.org/2000/svg" className="h-7 w-auto">
+      {/* Mark: two slashes + blue triangle */}
+      <g>
+        {/* slash 1 */}
+        <rect x="2" y="4" width="5" height="24" rx="2" transform="rotate(-15 2 4)" fill="#1a1a2e" />
+        {/* slash 2 */}
+        <rect x="10" y="4" width="5" height="24" rx="2" transform="rotate(-15 10 4)" fill="#1a1a2e" />
+        {/* blue triangle */}
+        <polygon points="18,28 30,4 30,28" fill="#3b82f6" />
+      </g>
+      {/* "smartd" */}
+      <text x="36" y="23" fontFamily="system-ui, -apple-system, sans-serif" fontWeight="700" fontSize="14" fill="#111827">smart</text>
+      {/* "o" as blue loop — simplified */}
+      <text x="80" y="23" fontFamily="system-ui, -apple-system, sans-serif" fontWeight="700" fontSize="14" fill="#3b82f6">o</text>
+      {/* "cs" */}
+      <text x="88" y="23" fontFamily="system-ui, -apple-system, sans-serif" fontWeight="700" fontSize="14" fill="#111827">cs</text>
+    </svg>
+  );
+}
 
 export default function Sidebar({ activeTab, onTabChange, counts }) {
   const authEnabled = CLIENT_ID && CLIENT_ID !== 'YOUR_CLIENT_ID';
@@ -26,27 +48,18 @@ export default function Sidebar({ activeTab, onTabChange, counts }) {
   const initials = displayName.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase();
 
   return (
-    <aside className="hidden md:flex flex-col w-56 bg-white border-r border-gray-100 min-h-screen flex-shrink-0">
+    <aside className="hidden md:flex flex-col w-60 bg-white border-r border-gray-200 min-h-screen flex-shrink-0">
       {/* Logo */}
-      <div className="px-4 py-5 border-b border-gray-100">
-        <div className="flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: 'linear-gradient(135deg, #0D1B2A, #1B3A5B)' }}>
-            <span className="text-white font-bold text-sm">S</span>
-          </div>
-          <div className="min-w-0">
-            <p className="font-bold text-gray-900 text-sm leading-tight">SmartDocs</p>
-            <p className="text-xs text-gray-400 leading-tight">Command Center</p>
-          </div>
-        </div>
+      <div className="px-5 py-4 border-b border-gray-100">
+        <SmartDocsLogo />
+        <p className="text-xs text-gray-400 mt-1 font-medium">Command Center</p>
       </div>
 
       {/* Nav */}
-      <nav className="flex-1 px-2 py-3 overflow-y-auto">
+      <nav className="flex-1 px-3 py-3 overflow-y-auto">
         {NAV.map((item, i) => {
-          if (item.section !== undefined && !item.id) {
-            return item.section ? (
-              <p key={i} className="text-xs font-semibold text-gray-400 uppercase tracking-wider px-3 pt-4 pb-1.5">{item.section}</p>
-            ) : null;
+          if (item.section) {
+            return <p key={i} className="text-xs font-semibold text-gray-400 uppercase tracking-wider px-3 pt-5 pb-1.5">{item.section}</p>;
           }
           const Icon = item.icon;
           const isActive = activeTab === item.id;
@@ -61,11 +74,11 @@ export default function Sidebar({ activeTab, onTabChange, counts }) {
                   : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
               }`}
             >
-              <Icon size={16} className="flex-shrink-0" />
-              <span className="flex-1 text-left">{item.label}</span>
+              <Icon size={15} className="flex-shrink-0" />
+              <span className="flex-1 text-left leading-snug">{item.label}</span>
               {count > 0 && (
                 <span className={`text-xs font-bold px-1.5 py-0.5 rounded-full leading-none ${
-                  isActive ? 'bg-white/20 text-white' : 'bg-gray-100 text-gray-500'
+                  isActive ? 'bg-white/25 text-white' : 'bg-gray-100 text-gray-500'
                 }`}>{count}</span>
               )}
             </button>
@@ -74,7 +87,7 @@ export default function Sidebar({ activeTab, onTabChange, counts }) {
       </nav>
 
       {/* User footer */}
-      <div className="px-3 py-4 border-t border-gray-100">
+      <div className="px-4 py-4 border-t border-gray-100">
         <div className="flex items-center gap-2.5">
           <div className="w-8 h-8 rounded-full bg-blue-600 text-white text-xs font-bold flex items-center justify-center flex-shrink-0">
             {initials}
@@ -85,7 +98,7 @@ export default function Sidebar({ activeTab, onTabChange, counts }) {
           </div>
           {account && (
             <button onClick={logout} title="Sign out" className="text-gray-400 hover:text-gray-600 flex-shrink-0">
-              <LogOut size={15} />
+              <LogOut size={14} />
             </button>
           )}
         </div>

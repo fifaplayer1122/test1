@@ -17,14 +17,15 @@ import { CLIENT_ID } from './lib/auth';
 const queryClient = new QueryClient();
 
 const PAGE_TITLES = {
-  dashboard: 'Dashboard',
-  active:    'Active Tasks',
-  done:      'Completed',
-  skipped:   'Skipped',
-  photos:    'Photos',
-  workforce: 'Workforce Report',
-  weekend:   'Team Hub',
-  updates:   'Team Updates',
+  dashboard:  'Dashboard',
+  active:     'Active Tasks',
+  done:       'Completed',
+  skipped:    'Skipped',
+  photos:     'Photos',
+  workforce:  'Workforce Report',
+  weekend:    'Weekend Availability',
+  priorities: 'Team Priorities',
+  updates:    'Team Updates',
 };
 
 function AppInner() {
@@ -39,14 +40,12 @@ function AppInner() {
   const tabTasks = { active: activeTasks, done: doneTasks, skipped: skippedTasks };
 
   return (
-    <div className="flex min-h-screen bg-gray-50">
-      {/* Sidebar — desktop only */}
+    <div className="flex min-h-screen bg-gray-100">
       <Sidebar activeTab={activeTab} onTabChange={setActiveTab} counts={counts} />
 
-      {/* Main area */}
       <div className="flex-1 flex flex-col min-w-0">
         {/* Top bar */}
-        <header className="bg-white border-b border-gray-100 px-4 sm:px-6 py-3.5 flex items-center justify-between sticky top-0 z-20">
+        <header className="bg-white border-b border-gray-200 px-4 sm:px-6 py-3.5 flex items-center justify-between sticky top-0 z-20">
           <h1 className="text-base font-bold text-gray-900">{PAGE_TITLES[activeTab] || 'Dashboard'}</h1>
           <div className="flex items-center gap-2">
             <div className="w-2 h-2 rounded-full bg-green-400" />
@@ -65,7 +64,9 @@ function AppInner() {
           ) : activeTab === 'workforce' ? (
             <WorkforceTab />
           ) : activeTab === 'weekend' ? (
-            <WeekendAvailability />
+            <WeekendAvailability defaultSection="weekend" />
+          ) : activeTab === 'priorities' ? (
+            <WeekendAvailability defaultSection="priority" />
           ) : activeTab === 'updates' ? (
             <TeamUpdates />
           ) : (
@@ -77,7 +78,6 @@ function AppInner() {
         </main>
       </div>
 
-      {/* Mobile bottom nav */}
       <MobileNav activeTab={activeTab} onTabChange={setActiveTab} counts={counts} />
     </div>
   );

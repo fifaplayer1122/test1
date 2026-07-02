@@ -220,10 +220,10 @@ function ManageMembersModal({ data, onSave, onClose }) {
 /* ══════════════════════════════════════════════════════
    MAIN COMPONENT
 ══════════════════════════════════════════════════════ */
-export default function TeamHub() {
+export default function TeamHub({ defaultSection = 'priority' }) {
   const [data, setData]         = useState(getWeekendData);
   const [identity, setIdentity] = useState(resolveIdentity);
-  const [activeTab, setActiveTab] = useState('priority'); // 'priority' | 'weekend'
+  const [activeTab, setActiveTab] = useState(defaultSection);
   const [showIdModal, setShowIdModal]     = useState(false);
   const [editWeekend, setEditWeekend]     = useState(null);
   const [editPriority, setEditPriority]   = useState(null);
