@@ -267,13 +267,20 @@ export default function WeekendAvailability() {
               {identity || '…'}
             </div>
           ) : (
-            <button
-              onClick={() => setShowIdModal(true)}
-              className="flex items-center gap-1.5 text-xs text-gray-500 border border-gray-200 rounded-lg px-2.5 py-1.5 hover:bg-gray-50"
-            >
-              <UserCircle2 size={13} />
-              {identity || 'Select profile'}
-            </button>
+            /* Test switcher — only visible when Outlook auth is off */
+            <div className="flex items-center gap-1.5">
+              <span className="text-xs text-gray-400 font-medium">Viewing as:</span>
+              <select
+                value={identity || ''}
+                onChange={e => { const n = e.target.value; saveIdentity(n); setIdentity(n); }}
+                className="text-xs border border-dashed border-blue-300 bg-blue-50 text-blue-700 font-semibold rounded-lg px-2 py-1.5 focus:outline-none focus:border-blue-500 cursor-pointer"
+              >
+                {!identity && <option value="">— pick —</option>}
+                {data.members.map(m => (
+                  <option key={m} value={m}>{m}{ADMINS.includes(m) ? ' (Admin)' : ''}</option>
+                ))}
+              </select>
+            </div>
           )}
           {identity === 'Pranesh' && (
             <button onClick={() => setShowManage(true)} className="text-gray-400 hover:text-gray-600 border border-gray-200 rounded-lg p-1.5 hover:bg-gray-50">
