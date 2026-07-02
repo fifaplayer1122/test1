@@ -30,7 +30,7 @@ const PAGE_TITLES = {
 
 function AppInner() {
   const [activeTab, setActiveTab] = useState('dashboard');
-  const { data: tasks = [], isLoading } = useQuery({ queryKey: ['tasks'], queryFn: getTasks });
+  const { data: tasks = [], isLoading, error } = useQuery({ queryKey: ['tasks'], queryFn: getTasks, retry: 1 });
 
   const activeTasks  = tasks.filter(t => t.status === 'todo' || t.status === 'in_progress');
   const doneTasks    = tasks.filter(t => t.status === 'done');
@@ -61,6 +61,11 @@ function AppInner() {
         <main className="flex-1 px-4 py-5 sm:px-6 sm:py-6">
           {isLoading ? (
             <Spinner />
+          ) : error ? (
+            <div className="flex flex-col items-center justify-center py-24 text-center px-4">
+              <p className="text-red-500 font-semibold mb-2">Failed to connect to database</p>
+              <p className="text-xs text-gray-400 font-mono bg-gray-100 rounded px-3 py-2 max-w-lg break-all">{error.message}</p>
+            </div>
           ) : activeTab === 'dashboard' ? (
             <Dashboard onNavigate={setActiveTab} />
           ) : activeTab === 'photos' ? (
