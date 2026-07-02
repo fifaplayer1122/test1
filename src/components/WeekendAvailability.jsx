@@ -54,47 +54,90 @@ function StatusBadge({ status }) {
   );
 }
 
+const STATUS_OPTIONS = [
+  { value: 'none',        label: 'Waiting for Reply' },
+  { value: 'available',   label: 'Available'          },
+  { value: 'partial',     label: 'Partial / Limited'  },
+  { value: 'unavailable', label: 'Unavailable'        },
+];
+
 /* ─── Weekend edit modal ─── */
-function WeekendEditModal({ member, entry, onSave, onClose }) {
-  const [sat, setSat]       = useState(entry?.sat || 'none');
-  const [sun, setSun]       = useState(entry?.sun || 'none');
-  const [topics, setTopics] = useState(entry?.topics || '');
+function WeekendEditModal({ member, entry, onSave, onClose, isAdmin, allMembers }) {
+  const [name, setName]       = useState(member || '');
+  const [sat, setSat]         = useState(entry?.sat || 'none');
+  const [sun, setSun]         = useState(entry?.sun || 'none');
+  const [satTime, setSatTime] = useState(entry?.satTime || '');
+  const [sunTime, setSunTime] = useState(entry?.sunTime || '');
+  const [topics, setTopics]   = useState(entry?.topics || '');
+
+  const inputCls = "w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-500 bg-white";
+  const labelCls = "block text-sm font-medium text-gray-700 mb-1.5";
+
   return (
-    <div className="fixed inset-0 z-50 bg-black/50 flex items-end sm:items-center justify-center p-0 sm:p-4" onClick={onClose}>
-      <div className="bg-white rounded-t-2xl sm:rounded-2xl shadow-xl w-full sm:max-w-sm p-5" onClick={e => e.stopPropagation()}>
-        <div className="flex items-center justify-between mb-4">
-          <div>
-            <p className="font-semibold text-gray-900">{member}</p>
-            <p className="text-xs text-gray-400">Weekend availability</p>
-          </div>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600"><X size={18} /></button>
+    <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4" onClick={onClose}>
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md" onClick={e => e.stopPropagation()}>
+        {/* Header */}
+        <div className="flex items-center justify-between px-6 pt-5 pb-4 border-b border-gray-100">
+          <h2 className="text-base font-semibold text-gray-900">Add Availability</h2>
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-600 rounded-lg p-1 hover:bg-gray-100"><X size={18} /></button>
         </div>
-        {[{ label: 'Saturday', val: sat, set: setSat }, { label: 'Sunday', val: sun, set: setSun }].map(day => (
-          <div key={day.label} className="mb-4">
-            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">{day.label}</p>
-            <div className="grid grid-cols-2 gap-2">
-              {Object.entries(STATUS).map(([key, s]) => {
-                const Icon = s.icon;
-                const active = day.val === key;
-                return (
-                  <button key={key} onClick={() => day.set(key)}
-                    className={`flex items-center gap-1.5 px-3 py-2 rounded-xl border text-xs font-medium transition-all ${active ? `${s.bg} ${s.border} ${s.cls}` : 'border-gray-200 text-gray-500 hover:border-gray-300'}`}>
-                    <Icon size={13} />{s.label}
-                  </button>
-                );
-              })}
+
+        <div className="px-6 py-5 space-y-4">
+          {/* Name */}
+          <div>
+            <label className={labelCls}>Name</label>
+            {isAdmin ? (
+              <select value={name} onChange={e => setName(e.target.value)} className={inputCls}>
+                <option value="">Select employee…</option>
+                {allMembers.map(m => <option key={m} value={m}>{m}</option>)}
+              </select>
+            ) : (
+              <input value={name} readOnly className={`${inputCls} bg-gray-50 text-gray-500`} placeholder="Employee name" />
+            )}
+          </div>
+
+          {/* Status row */}
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className={labelCls}>Saturday Status</label>
+              <select value={sat} onChange={e => setSat(e.target.value)} className={inputCls}>
+                {STATUS_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className={labelCls}>Sunday Status</label>
+              <select value={sun} onChange={e => setSun(e.target.value)} className={inputCls}>
+                {STATUS_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+              </select>
             </div>
           </div>
-        ))}
-        <div className="mb-4">
-          <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Notes</p>
-          <textarea rows={2} value={topics} onChange={e => setTopics(e.target.value)}
-            placeholder="Any notes for this weekend?"
-            className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm resize-none focus:outline-none focus:border-blue-400" />
+
+          {/* Time/Details row */}
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className={labelCls}>Saturday Time/Details</label>
+              <input value={satTime} onChange={e => setSatTime(e.target.value)} placeholder="e.g. 10:30 AM onwards" className={inputCls} />
+            </div>
+            <div>
+              <label className={labelCls}>Sunday Time/Details</label>
+              <input value={sunTime} onChange={e => setSunTime(e.target.value)} placeholder="e.g. 9 AM to 12 PM" className={inputCls} />
+            </div>
+          </div>
+
+          {/* Topics */}
+          <div>
+            <label className={labelCls}>Topics / Notes</label>
+            <textarea rows={3} value={topics} onChange={e => setTopics(e.target.value)}
+              placeholder="Any topics or agenda items…"
+              className={`${inputCls} resize-none`} />
+          </div>
         </div>
-        <div className="flex gap-2">
-          <button onClick={onClose} className="flex-1 py-2.5 border border-gray-200 text-gray-600 rounded-xl text-sm font-medium hover:bg-gray-50">Cancel</button>
-          <button onClick={() => onSave({ sat, sun, topics })} className="flex-1 py-2.5 bg-blue-600 text-white rounded-xl text-sm font-medium hover:bg-blue-700">Save</button>
+
+        {/* Footer */}
+        <div className="flex items-center justify-end gap-3 px-6 pb-5">
+          <button onClick={onClose} className="px-5 py-2 border border-gray-300 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-50">Cancel</button>
+          <button onClick={() => onSave({ sat, sun, satTime, sunTime, topics }, isAdmin ? name : member)}
+            className="px-5 py-2 bg-gray-900 text-white rounded-lg text-sm font-medium hover:bg-gray-800">Add</button>
         </div>
       </div>
     </div>
@@ -239,8 +282,10 @@ export default function TeamHub({ defaultSection = 'priority' }) {
 
   const persist = (next) => { setData(next); saveWeekendData(next); };
 
-  const saveWeekend = (member, entry) => {
-    persist({ ...data, entries: { ...data.entries, [member]: { ...data.entries[member], ...entry } } });
+  const saveWeekend = (entry, nameOverride) => {
+    const target = nameOverride || editWeekend;
+    if (!target) return;
+    persist({ ...data, entries: { ...data.entries, [target]: { ...data.entries[target], ...entry } } });
     setEditWeekend(null);
   };
 
@@ -261,7 +306,7 @@ export default function TeamHub({ defaultSection = 'priority' }) {
     <div>
       {/* Modals */}
       {showIdModal && <IdentityModal members={data.members} onSelect={name => { setIdentity(name); setShowIdModal(false); }} />}
-      {editWeekend && <WeekendEditModal member={editWeekend} entry={data.entries[editWeekend]} onSave={e => saveWeekend(editWeekend, e)} onClose={() => setEditWeekend(null)} />}
+      {editWeekend && <WeekendEditModal member={editWeekend} entry={data.entries[editWeekend]} onSave={saveWeekend} onClose={() => setEditWeekend(null)} isAdmin={isAdmin} allMembers={data.members.filter(m => !ADMINS.includes(m))} />}
       {editPriority && <PriorityEditModal member={editPriority} entry={data.entries[editPriority]} onSave={e => savePriority(editPriority, e)} onClose={() => setEditPriority(null)} />}
       {showManage && <ManageMembersModal data={data} onSave={handleManageSave} onClose={() => setShowManage(false)} />}
 
@@ -435,7 +480,9 @@ export default function TeamHub({ defaultSection = 'priority' }) {
                 <tr>
                   <th className="px-5 py-3 text-left text-xs font-semibold text-gray-400 uppercase tracking-wide w-40">Name</th>
                   <th className="px-5 py-3 text-left text-xs font-semibold text-gray-400 uppercase tracking-wide">{fmtDay(sat)}</th>
+                  <th className="px-5 py-3 text-left text-xs font-semibold text-gray-400 uppercase tracking-wide w-28">Sat Time</th>
                   <th className="px-5 py-3 text-left text-xs font-semibold text-gray-400 uppercase tracking-wide">{fmtDay(sun)}</th>
+                  <th className="px-5 py-3 text-left text-xs font-semibold text-gray-400 uppercase tracking-wide w-28">Sun Time</th>
                   <th className="px-5 py-3 text-left text-xs font-semibold text-gray-400 uppercase tracking-wide">Notes</th>
                 </tr>
               </thead>
@@ -455,7 +502,9 @@ export default function TeamHub({ defaultSection = 'priority' }) {
                         </div>
                       </td>
                       <td className="px-5 py-3.5"><StatusBadge status={e.sat || 'none'} /></td>
+                      <td className="px-5 py-3.5 text-xs text-gray-500">{e.satTime || <span className="text-gray-300">—</span>}</td>
                       <td className="px-5 py-3.5"><StatusBadge status={e.sun || 'none'} /></td>
+                      <td className="px-5 py-3.5 text-xs text-gray-500">{e.sunTime || <span className="text-gray-300">—</span>}</td>
                       <td className="px-5 py-3.5 text-xs text-gray-500 max-w-xs truncate">{e.topics || <span className="text-gray-300">—</span>}</td>
                     </tr>
                   );

@@ -19,27 +19,6 @@ const NAV = [
   { id: 'photos',    label: 'Photos',              icon: Image           },
 ];
 
-function SmartDocsLogo() {
-  return (
-    <svg viewBox="0 0 120 32" fill="none" xmlns="http://www.w3.org/2000/svg" className="h-7 w-auto">
-      {/* Mark: two slashes + blue triangle */}
-      <g>
-        {/* slash 1 */}
-        <rect x="2" y="4" width="5" height="24" rx="2" transform="rotate(-15 2 4)" fill="#1a1a2e" />
-        {/* slash 2 */}
-        <rect x="10" y="4" width="5" height="24" rx="2" transform="rotate(-15 10 4)" fill="#1a1a2e" />
-        {/* blue triangle */}
-        <polygon points="18,28 30,4 30,28" fill="#3b82f6" />
-      </g>
-      {/* "smartd" */}
-      <text x="36" y="23" fontFamily="system-ui, -apple-system, sans-serif" fontWeight="700" fontSize="14" fill="#111827">smart</text>
-      {/* "o" as blue loop — simplified */}
-      <text x="80" y="23" fontFamily="system-ui, -apple-system, sans-serif" fontWeight="700" fontSize="14" fill="#3b82f6">o</text>
-      {/* "cs" */}
-      <text x="88" y="23" fontFamily="system-ui, -apple-system, sans-serif" fontWeight="700" fontSize="14" fill="#111827">cs</text>
-    </svg>
-  );
-}
 
 export default function Sidebar({ activeTab, onTabChange, counts }) {
   const authEnabled = CLIENT_ID && CLIENT_ID !== 'YOUR_CLIENT_ID';
@@ -51,7 +30,7 @@ export default function Sidebar({ activeTab, onTabChange, counts }) {
     <aside className="hidden md:flex flex-col w-60 bg-white border-r border-gray-200 min-h-screen flex-shrink-0">
       {/* Logo */}
       <div className="px-5 py-4 border-b border-gray-100">
-        <SmartDocsLogo />
+        <img src="/logo.svg" alt="SmartDocs" className="h-7 w-auto" />
         <p className="text-xs text-gray-400 mt-1 font-medium">Command Center</p>
       </div>
 
