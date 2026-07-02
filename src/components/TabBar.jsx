@@ -7,7 +7,7 @@ const TABS = [
   { id: 'skipped',   label: 'Skipped',   icon: SkipForward     },
   { id: 'photos',    label: 'Photos',    icon: Image           },
   { id: 'workforce', label: 'Workforce', icon: Users           },
-  { id: 'weekend',   label: 'Weekend',   icon: CalendarDays    },
+  { id: 'weekend',   label: 'Team Hub',  icon: CalendarDays    },
 ];
 
 export default function TabBar({ activeTab, onTabChange, counts }) {
