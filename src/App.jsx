@@ -47,7 +47,7 @@ function AppInner() {
         {/* Top bar */}
         <header className="bg-white border-b border-gray-200 px-4 sm:px-6 py-3 flex items-center justify-between sticky top-0 z-20">
           {/* Mobile: logo | Desktop: page title */}
-          <img src="/logo.svg" alt="SmartDocs" className="h-6 w-auto md:hidden" />
+          <img src="/logo.svg" alt="SmartDocs" className="h-7 w-auto md:hidden" />
           <h1 className="hidden md:block text-base font-bold text-gray-900">{PAGE_TITLES[activeTab] || 'Dashboard'}</h1>
           <div className="md:hidden flex-1 text-center">
             <span className="text-sm font-semibold text-gray-700">{PAGE_TITLES[activeTab] || 'Dashboard'}</span>
