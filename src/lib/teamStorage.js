@@ -35,7 +35,7 @@ export async function getWeekendData() {
     supabase.from('member_entries').select('*'),
   ]);
 
-  const members = (membersRes.data || []).map(r => r.name);
+  let members = (membersRes.data || []).map(r => r.name);
   const entries = {};
   for (const row of (entriesRes.data || [])) {
     entries[row.member_name] = {
@@ -51,10 +51,37 @@ export async function getWeekendData() {
     };
   }
 
-  return {
-    members: members.length ? members : DEFAULT_MEMBERS,
-    entries,
-  };
+  // One-time migration from localStorage
+  if (members.length === 0) {
+    const local = localStorage.getItem('ceo_weekend');
+    if (local) {
+      const parsed = JSON.parse(local);
+      members = parsed.members || DEFAULT_MEMBERS;
+      // Migrate entries
+      for (const [name, e] of Object.entries(parsed.entries || {})) {
+        entries[name] = e;
+        await supabase.from('member_entries').upsert({
+          member_name:    name,
+          sat:            e.sat || 'none',
+          sat_time:       e.satTime || '',
+          sun:            e.sun || 'none',
+          sun_time:       e.sunTime || '',
+          topics:         e.topics || '',
+          focus:          e.focus || '',
+          waiting_on_ravi: e.waitingOnRavi || false,
+          waiting_reason: e.waitingReason || '',
+        }, { onConflict: 'member_name' });
+      }
+    } else {
+      members = DEFAULT_MEMBERS;
+    }
+    // Seed members table
+    await supabase.from('members').insert(
+      members.map((name, i) => ({ name, sort_order: i }))
+    );
+  }
+
+  return { members: members.length ? members : DEFAULT_MEMBERS, entries };
 }
 
 export async function upsertMemberEntry(memberName, updates) {

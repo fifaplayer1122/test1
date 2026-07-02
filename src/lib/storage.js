@@ -8,7 +8,25 @@ export async function getTasks() {
     .select('*')
     .order('created_at', { ascending: true });
   if (error) throw error;
-  return data || [];
+
+  // One-time migration: if DB is empty, pull from localStorage (or use defaults)
+  if (data.length === 0) {
+    const local = localStorage.getItem('ceo_tasks');
+    const seed = local ? JSON.parse(local) : DEFAULT_TASKS;
+    const rows = seed.map(t => ({
+      id:         t.id || crypto.randomUUID(),
+      title:      t.title,
+      priority:   t.priority || 'medium',
+      notes:      t.notes || '',
+      eta:        t.eta || null,
+      status:     t.status || 'todo',
+      created_at: t.created_at || new Date().toISOString(),
+    }));
+    await supabase.from('tasks').insert(rows);
+    return seed;
+  }
+
+  return data;
 }
 
 export async function createTask(task) {

@@ -13,6 +13,27 @@ export async function getUpdates() {
     .select('*')
     .order('created_at', { ascending: false });
   if (error) throw error;
+
+  // One-time migration from localStorage
+  if (data.length === 0) {
+    const local = localStorage.getItem('ceo_team_updates');
+    if (local) {
+      const seed = JSON.parse(local);
+      if (seed.length > 0) {
+        await supabase.from('team_updates').insert(
+          seed.map(u => ({
+            id:         u.id || crypto.randomUUID(),
+            author:     u.author,
+            text:       u.text,
+            category:   u.category || 'update',
+            created_at: u.createdAt || new Date().toISOString(),
+          }))
+        );
+        return seed;
+      }
+    }
+  }
+
   return data || [];
 }
 
