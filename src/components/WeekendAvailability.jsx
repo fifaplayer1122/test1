@@ -1,11 +1,30 @@
 import { useState, useEffect } from 'react';
-import { CalendarDays, Clock, CheckCircle2, XCircle, Clock3, ChevronDown, X, UserCircle2, Settings, Plus, Trash2, AlertTriangle } from 'lucide-react';
+import { CalendarDays, Clock, CheckCircle2, XCircle, Clock3, X, UserCircle2, Settings, Plus, Trash2, AlertTriangle } from 'lucide-react';
 import {
-  ADMINS, DEFAULT_MEMBERS,
+  ADMINS,
   getNextWeekend, fmtDate, fmtDay,
   getWeekendData, saveWeekendData,
   getIdentity, saveIdentity,
 } from '../lib/teamStorage';
+import { getAccount, CLIENT_ID } from '../lib/auth';
+
+function getOutlookFirstName(account) {
+  if (!account) return null;
+  // account.name is "Firstname Lastname" from Azure AD
+  const name = account.name || account.username || '';
+  return name.split(' ')[0] || name;
+}
+
+function resolveIdentity() {
+  // If auth is active, use Outlook display name
+  const authEnabled = CLIENT_ID && CLIENT_ID !== 'YOUR_CLIENT_ID';
+  if (authEnabled) {
+    const account = getAccount();
+    if (account) return getOutlookFirstName(account);
+  }
+  // Otherwise fall back to stored manual selection
+  return getIdentity();
+}
 
 const STATUS = {
   none:        { label: "Haven't submitted", icon: Clock3,        cls: 'text-amber-500',  bg: 'bg-amber-50',  border: 'border-amber-200' },
@@ -173,17 +192,19 @@ function ManageMembersModal({ data, onSave, onClose }) {
 
 export default function WeekendAvailability() {
   const [data, setData]         = useState(getWeekendData);
-  const [identity, setIdentity] = useState(getIdentity);
+  const [identity, setIdentity] = useState(resolveIdentity);
   const [showIdModal, setShowIdModal]   = useState(false);
-  const [editTarget, setEditTarget]     = useState(null); // member name being edited
+  const [editTarget, setEditTarget]     = useState(null);
   const [showManage, setShowManage]     = useState(false);
 
+  const authEnabled = CLIENT_ID && CLIENT_ID !== 'YOUR_CLIENT_ID';
   const { sat, sun } = getNextWeekend();
   const isAdmin = ADMINS.includes(identity);
 
   useEffect(() => {
-    if (!identity) setShowIdModal(true);
-  }, [identity]);
+    // Only show manual picker if auth is off and no stored identity
+    if (!identity && !authEnabled) setShowIdModal(true);
+  }, [identity, authEnabled]);
 
   const persist = (next) => { setData(next); saveWeekendData(next); };
 
@@ -240,13 +261,20 @@ export default function WeekendAvailability() {
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <button
-            onClick={() => setShowIdModal(true)}
-            className="flex items-center gap-1.5 text-xs text-gray-500 border border-gray-200 rounded-lg px-2.5 py-1.5 hover:bg-gray-50"
-          >
-            <UserCircle2 size={13} />
-            {identity || 'Select profile'}
-          </button>
+          {authEnabled ? (
+            <div className="flex items-center gap-1.5 text-xs text-gray-500 border border-gray-200 rounded-lg px-2.5 py-1.5 bg-gray-50">
+              <UserCircle2 size={13} />
+              {identity || '…'}
+            </div>
+          ) : (
+            <button
+              onClick={() => setShowIdModal(true)}
+              className="flex items-center gap-1.5 text-xs text-gray-500 border border-gray-200 rounded-lg px-2.5 py-1.5 hover:bg-gray-50"
+            >
+              <UserCircle2 size={13} />
+              {identity || 'Select profile'}
+            </button>
+          )}
           {identity === 'Pranesh' && (
             <button onClick={() => setShowManage(true)} className="text-gray-400 hover:text-gray-600 border border-gray-200 rounded-lg p-1.5 hover:bg-gray-50">
               <Settings size={14} />
