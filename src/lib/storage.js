@@ -2,6 +2,40 @@ import { supabase } from './supabase';
 
 // ── Tasks ─────────────────────────────────────────────────────────────────────
 
+const TASK_SEED = [
+  // ── To Do ──
+  { title: 'IBTTA Annual Meeting - Submit Call for Presentations',                       priority: 'very_high', notes: 'July 10th Deadline',                                          eta: '2026-07-10', status: 'todo' },
+  { title: 'Cancel LinkedIn Premium (personal + company)',                                priority: 'very_high', notes: '2 weeks deadline',                                            eta: '2026-07-05', status: 'todo' },
+  { title: 'Need to visit office daily to check for mail',                               priority: 'very_high', notes: 'Check daily',                                                 eta: null,         status: 'todo' },
+  { title: 'NIGP event - backdrop, table, flyers, swag',                                 priority: 'very_high', notes: 'Conference Aug 23-26, Exhibit Aug 23-24, 2026',               eta: '2026-07-25', status: 'todo' },
+  { title: 'Messaging of Maintenance IBTTA Conference',                                  priority: 'high',      notes: 'Being worked on',                                             eta: null,         status: 'todo' },
+  { title: 'Apple Developer - confirm organization address change',                       priority: 'high',      notes: '',                                                            eta: null,         status: 'todo' },
+  { title: 'Cancel OFAC API subscription',                                               priority: 'high',      notes: '',                                                            eta: null,         status: 'todo' },
+  { title: 'FL Registration is rejected, need to fix',                                   priority: 'high',      notes: '',                                                            eta: '2026-07-15', status: 'todo' },
+  { title: 'Sign up for Nacha partnership',                                              priority: 'high',      notes: '',                                                            eta: null,         status: 'todo' },
+  { title: 'Signup for ESRI partnership',                                                priority: 'high',      notes: '',                                                            eta: null,         status: 'todo' },
+  { title: 'Post weekly on leadership channel (at least 1/week)',                        priority: 'medium',    notes: 'Repeated task',                                               eta: null,         status: 'todo' },
+  { title: 'Post 2-3 times weekly on notebook channel',                                  priority: 'medium',    notes: 'Repeated task',                                               eta: null,         status: 'todo' },
+  { title: 'Adobe $21.19 charge - review and action',                                    priority: 'medium',    notes: '',                                                            eta: null,         status: 'todo' },
+  { title: 'NIGP Exhibitor Hub - August Summit registration (initial info added)',        priority: 'medium',    notes: '',                                                            eta: null,         status: 'todo' },
+  { title: 'Register for APPA September Summit',                                         priority: 'medium',    notes: '',                                                            eta: null,         status: 'todo' },
+  { title: 'Need to order Visiting Card for Tod',                                        priority: 'medium',    notes: 'Already kept in Staples',                                     eta: '2026-07-14', status: 'todo' },
+  { title: 'Order dot.Cards - dotcards.net/products/black-card',                         priority: 'medium',    notes: '',                                                            eta: null,         status: 'todo' },
+  // ── Done ──
+  { title: 'To book a handyman for New Orleans booth build up',                          priority: 'very_high', notes: 'Soon to be sorted',                                           eta: null,         status: 'done' },
+  { title: 'IBTTA Maintenance Workshop (New Orleans) - Order table + ship by today',     priority: 'very_high', notes: 'Working on',                                                  eta: null,         status: 'done' },
+  { title: 'IBTTA Annual Meeting Exhibit Sales Open on Tuesday (Sneak Preview Available Now!)', priority: 'very_high', notes: 'Need to remind',                                       eta: null,         status: 'done' },
+  { title: 'To talk to Sai Pranav on his last working day',                              priority: 'very_high', notes: '',                                                            eta: null,         status: 'done' },
+  { title: 'To decide on Jyothi extension',                                              priority: 'very_high', notes: '',                                                            eta: null,         status: 'done' },
+  { title: 'US Visa Documents for Raghu',                                                priority: 'high',      notes: 'Being worked on',                                             eta: null,         status: 'done' },
+  { title: 'Merchology shirts - check arrival',                                          priority: 'high',      notes: '',                                                            eta: null,         status: 'done' },
+  { title: 'Register SmartDocs in Tennessee and Georgia',                                priority: 'high',      notes: '',                                                            eta: null,         status: 'done' },
+  { title: 'Get COI for JEA',                                                            priority: 'high',      notes: '',                                                            eta: null,         status: 'done' },
+  { title: 'SWAGS - order Touchscreen cleaner, Electronic cleaner, dot.card',            priority: 'medium',    notes: '',                                                            eta: null,         status: 'done' },
+  // ── Skipped ──
+  { title: 'Harvard Medical School AI certificate program - register',                   priority: 'medium',    notes: '',                                                            eta: null,         status: 'skip' },
+];
+
 export async function getTasks() {
   const { data, error } = await supabase
     .from('tasks')
@@ -9,20 +43,17 @@ export async function getTasks() {
     .order('created_at', { ascending: true });
   if (error) throw error;
 
-  // One-time migration: if DB is empty, pull from localStorage (or use defaults)
   if (data.length === 0) {
+    // Try localStorage migration first, otherwise seed with defaults
     const local = localStorage.getItem('ceo_tasks');
-    const seed = local ? JSON.parse(local) : [];
-    const rows = seed.map(t => ({
-      id:         t.id || crypto.randomUUID(),
-      title:      t.title,
-      priority:   t.priority || 'medium',
-      notes:      t.notes || '',
-      eta:        t.eta || null,
-      status:     t.status || 'todo',
-      created_at: t.created_at || new Date().toISOString(),
-    }));
-    await supabase.from('tasks').insert(rows);
+    const seed = local
+      ? JSON.parse(local)
+      : TASK_SEED.map((t, i) => ({
+          id:         crypto.randomUUID(),
+          ...t,
+          created_at: new Date(Date.now() + i * 1000).toISOString(),
+        }));
+    await supabase.from('tasks').insert(seed);
     return seed;
   }
 
