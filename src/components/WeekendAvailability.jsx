@@ -24,7 +24,7 @@ function resolveIdentity() {
   const authEnabled = CLIENT_ID && CLIENT_ID !== 'YOUR_CLIENT_ID';
   if (authEnabled) {
     const account = getAccount();
-    if (account) return getOutlookFirstName(account);
+    if (account) return (account.name || account.username || '');
   }
   return getIdentity();
 }
@@ -423,7 +423,6 @@ export default function TeamHub({ defaultSection = 'priority' }) {
   });
 
   const [identity, setIdentity] = useState(resolveIdentity);
-  const [activeTab, setActiveTab] = useState(defaultSection);
   const [showIdModal, setShowIdModal]   = useState(false);
   const [editWeekend, setEditWeekend]   = useState(null);
   const [priorityModal, setPriorityModal] = useState(null); // { item: null|object, memberName: string }
@@ -437,6 +436,17 @@ export default function TeamHub({ defaultSection = 'priority' }) {
     queryKey: ['memberPriorities'],
     queryFn: getMemberPriorities,
   });
+
+  // Match full Outlook name (e.g. "Aditya Simhadri") to member record (same string in DB)
+  useEffect(() => {
+    if (!identity || data.members.length === 0) return;
+    if (data.members.includes(identity) || ADMINS.includes(identity)) return;
+    const firstName = identity.split(' ')[0];
+    const match = data.members.find(m => m === firstName || m.split(' ')[0] === firstName);
+    if (match) { setIdentity(match); return; }
+    // If auth enabled and no match found, still show id modal as fallback
+    if (!authEnabled) setShowIdModal(true);
+  }, [data.members]);
 
   useEffect(() => {
     if (!identity && !authEnabled) setShowIdModal(true);
@@ -540,25 +550,8 @@ export default function TeamHub({ defaultSection = 'priority' }) {
         </div>
       )}
 
-      {/* ── Sub-tab pills ── */}
-      <div className="flex gap-2 mb-4">
-        {[{ id: 'priority', label: 'My Priority', icon: Zap }, { id: 'weekend', label: 'Weekend', icon: CalendarDays }].map(t => (
-          <button key={t.id} onClick={() => setActiveTab(t.id)}
-            className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-medium border transition-all ${
-              activeTab === t.id ? 'bg-blue-600 text-white border-blue-600 shadow-sm' : 'bg-white text-gray-500 border-gray-200 hover:border-gray-300'
-            }`}>
-            <t.icon size={14} />{t.label}
-            {isAdmin && activeTab !== t.id && (t.id === 'priority' ? notSubmittedPriority : notSubmittedWeekend).length > 0 && (
-              <span className="bg-amber-100 text-amber-600 text-xs font-bold px-1.5 py-0.5 rounded-full leading-none">
-                {(t.id === 'priority' ? notSubmittedPriority : notSubmittedWeekend).length}
-              </span>
-            )}
-          </button>
-        ))}
-      </div>
-
       {/* ══ MY PRIORITY TAB ══ */}
-      {activeTab === 'priority' && (
+      {defaultSection === 'priority' && (
         <>
           {/* Member's own view */}
           {identity && !isAdmin && (() => {
@@ -643,7 +636,7 @@ export default function TeamHub({ defaultSection = 'priority' }) {
       )}
 
       {/* ══ WEEKEND TAB ══ */}
-      {activeTab === 'weekend' && (
+      {defaultSection === 'weekend' && (
         <>
           {isAdmin && notSubmittedWeekend.length > 0 && (
             <div className="flex items-start gap-2.5 bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 mb-4">
