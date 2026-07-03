@@ -5,28 +5,36 @@ import {
 import { logout, getAccount, CLIENT_ID } from '../lib/auth';
 import AppIcon from './AppIcon';
 
-const NAV = [
-  { id: 'dashboard', label: 'Dashboard',          icon: LayoutDashboard },
+const ADMIN_NAV = [
+  { id: 'dashboard', label: 'Dashboard',           icon: LayoutDashboard },
   { section: 'Tasks' },
-  { id: 'active',    label: 'Active',              icon: CheckSquare     },
-  { id: 'done',      label: 'Done',                icon: CheckCircle     },
-  { id: 'skipped',   label: 'Skipped',             icon: SkipForward     },
+  { id: 'active',    label: 'Active',               icon: CheckSquare     },
+  { id: 'done',      label: 'Done',                 icon: CheckCircle     },
+  { id: 'skipped',   label: 'Skipped',              icon: SkipForward     },
   { section: 'Team' },
-  { id: 'updates',   label: 'Team Updates',        icon: MessageSquare   },
-  { id: 'priorities',label: 'Priorities',          icon: Zap             },
-  { id: 'weekend',   label: 'Weekend Availability',icon: CalendarDays    },
-  { id: 'workforce', label: 'Team Report',         icon: Users           },
-  { id: 'photos',    label: 'Photos',              icon: Image           },
+  { id: 'updates',   label: 'Team Updates',         icon: MessageSquare   },
+  { id: 'priorities',label: 'Priorities',           icon: Zap             },
+  { id: 'weekend',   label: 'Weekend Availability', icon: CalendarDays    },
+  { id: 'workforce', label: 'Team Report',          icon: Users           },
+  { id: 'photos',    label: 'Photos',               icon: Image           },
   { section: 'Config' },
-  { id: 'roles',     label: 'Members & Roles',     icon: ShieldCheck     },
+  { id: 'roles',     label: 'Members & Roles',      icon: ShieldCheck     },
 ];
 
+const MEMBER_NAV = [
+  { section: 'My Submissions' },
+  { id: 'updates',    label: 'Team Updates',         icon: MessageSquare },
+  { id: 'priorities', label: 'My Priorities',        icon: Zap           },
+  { id: 'weekend',    label: 'Weekend Availability', icon: CalendarDays  },
+];
 
-export default function Sidebar({ activeTab, onTabChange, counts }) {
+export default function Sidebar({ activeTab, onTabChange, counts, isAdmin }) {
   const authEnabled = CLIENT_ID && CLIENT_ID !== 'YOUR_CLIENT_ID';
   const account = authEnabled ? getAccount() : null;
-  const displayName = account?.name || 'Ravi Shankar';
+  const displayName = account?.name || (isAdmin ? 'Ravi Shankar' : 'Team Member');
   const initials = displayName.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase();
+
+  const NAV = isAdmin ? ADMIN_NAV : MEMBER_NAV;
 
   return (
     <aside className="hidden md:flex flex-col w-60 bg-white border-r border-gray-200 min-h-screen flex-shrink-0">
@@ -75,12 +83,12 @@ export default function Sidebar({ activeTab, onTabChange, counts }) {
       {/* User footer */}
       <div className="px-4 py-4 border-t border-gray-100">
         <div className="flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-full bg-blue-600 text-white text-xs font-bold flex items-center justify-center flex-shrink-0">
+          <div className={`w-8 h-8 rounded-full text-white text-xs font-bold flex items-center justify-center flex-shrink-0 ${isAdmin ? 'bg-blue-600' : 'bg-violet-500'}`}>
             {initials}
           </div>
           <div className="flex-1 min-w-0">
             <p className="text-xs font-semibold text-gray-800 truncate">{displayName}</p>
-            <p className="text-xs text-gray-400">Admin</p>
+            <p className="text-xs text-gray-400">{isAdmin ? 'Admin' : 'Member'}</p>
           </div>
           {account && (
             <button onClick={logout} title="Sign out" className="text-gray-400 hover:text-gray-600 flex-shrink-0">

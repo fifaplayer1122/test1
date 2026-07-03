@@ -6,14 +6,14 @@ import {
 } from 'lucide-react';
 import AppIcon from './AppIcon';
 
-const NAV = [
+const ADMIN_NAV = [
   { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
   {
     section: 'Tasks',
     children: [
-      { id: 'active',   label: 'Active',   icon: CheckSquare  },
-      { id: 'done',     label: 'Done',     icon: CheckCircle  },
-      { id: 'skipped',  label: 'Skipped',  icon: SkipForward  },
+      { id: 'active',  label: 'Active',  icon: CheckSquare },
+      { id: 'done',    label: 'Done',    icon: CheckCircle },
+      { id: 'skipped', label: 'Skipped', icon: SkipForward },
     ],
   },
   {
@@ -34,16 +34,28 @@ const NAV = [
   },
 ];
 
-export default function MobileNav({ activeTab, onTabChange, counts }) {
-  const [open, setOpen]       = useState(false);
-  const [expanded, setExpanded] = useState({ Tasks: true, Team: true, Config: false });
+const MEMBER_NAV = [
+  {
+    section: 'My Submissions',
+    children: [
+      { id: 'updates',    label: 'Team Updates',         icon: MessageSquare },
+      { id: 'priorities', label: 'My Priorities',        icon: Zap           },
+      { id: 'weekend',    label: 'Weekend Availability', icon: CalendarDays  },
+    ],
+  },
+];
+
+export default function MobileNav({ activeTab, onTabChange, counts, isAdmin }) {
+  const [open, setOpen]         = useState(false);
+  const [expanded, setExpanded] = useState({ Tasks: true, Team: true, Config: false, 'My Submissions': true });
+
+  const NAV = isAdmin ? ADMIN_NAV : MEMBER_NAV;
 
   const navigate = (id) => { onTabChange(id); setOpen(false); };
   const toggle   = (section) => setExpanded(e => ({ ...e, [section]: !e[section] }));
 
   return (
     <>
-      {/* Hamburger button — rendered into the header via portal-like prop, but we just export a trigger */}
       <button
         id="mobile-hamburger"
         onClick={() => setOpen(true)}
@@ -53,27 +65,19 @@ export default function MobileNav({ activeTab, onTabChange, counts }) {
         <Menu size={22} strokeWidth={2} />
       </button>
 
-      {/* Overlay */}
-      <div
-        className={`md:hidden fixed inset-0 z-50 transition-all duration-300 ${open ? 'pointer-events-auto' : 'pointer-events-none'}`}
-      >
-        {/* Backdrop */}
+      <div className={`md:hidden fixed inset-0 z-50 transition-all duration-300 ${open ? 'pointer-events-auto' : 'pointer-events-none'}`}>
         <div
           className={`absolute inset-0 bg-black/40 transition-opacity duration-300 ${open ? 'opacity-100' : 'opacity-0'}`}
           onClick={() => setOpen(false)}
         />
 
-        {/* Slide-in panel from right */}
-        <div
-          className={`absolute top-0 right-0 bottom-0 w-[80vw] max-w-xs bg-white shadow-2xl flex flex-col transition-transform duration-300 ease-out ${open ? 'translate-x-0' : 'translate-x-full'}`}
-        >
-          {/* Panel header */}
+        <div className={`absolute top-0 right-0 bottom-0 w-[80vw] max-w-xs bg-white shadow-2xl flex flex-col transition-transform duration-300 ease-out ${open ? 'translate-x-0' : 'translate-x-full'}`}>
           <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
             <div className="flex items-center gap-2.5">
               <AppIcon size={32} />
               <div>
                 <p className="text-sm font-bold text-gray-900 leading-tight">SmartDocs</p>
-                <p className="text-xs text-gray-400 leading-tight">Command Center</p>
+                <p className="text-xs text-gray-400 leading-tight">{isAdmin ? 'Command Center' : 'My Portal'}</p>
               </div>
             </div>
             <button
@@ -84,11 +88,9 @@ export default function MobileNav({ activeTab, onTabChange, counts }) {
             </button>
           </div>
 
-          {/* Nav items */}
           <nav className="flex-1 overflow-y-auto py-3 px-3">
-            {NAV.map((item, i) => {
+            {NAV.map((item) => {
               if (item.id) {
-                // Top-level single item
                 const Icon = item.icon;
                 const isActive = activeTab === item.id;
                 return (
@@ -105,7 +107,6 @@ export default function MobileNav({ activeTab, onTabChange, counts }) {
                 );
               }
 
-              // Expandable section
               const isOpen = expanded[item.section];
               const anyChildActive = item.children.some(c => c.id === activeTab);
               return (
@@ -117,11 +118,7 @@ export default function MobileNav({ activeTab, onTabChange, counts }) {
                     }`}
                   >
                     <span className="uppercase tracking-wider text-xs">{item.section}</span>
-                    <ChevronDown
-                      size={16}
-                      strokeWidth={2.5}
-                      className={`transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`}
-                    />
+                    <ChevronDown size={16} strokeWidth={2.5} className={`transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} />
                   </button>
 
                   {isOpen && (
