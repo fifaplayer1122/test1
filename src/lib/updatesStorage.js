@@ -23,12 +23,45 @@ export function getStatus(val) {
   return STATUS_OPTIONS.find(s => s.value === val) || STATUS_OPTIONS[0];
 }
 
+const SEED = [
+  { author: 'Pranesh',        working_on: 'CLM competitive analysis',      priority: 'very_high', text: 'Draft response to Coupa/Tonkea positioning doc ready for review. Need Ravi to validate our differentiation angle before we send to Aditya.',           status: 'need_your_input' },
+  { author: 'Pranesh',        working_on: 'Dual-track pitch framework',    priority: 'high',      text: 'First draft of standalone CLM vs platform pitch decks done. Aligning messaging with sales team this week.',                                           status: 'have_a_question' },
+  { author: 'Sai Charan',     working_on: 'Website redesign',              priority: 'high',      text: 'Waiting on final homepage hero copy from Vibha. Dev build is ready, just blocked on content before we can push to staging.',                          status: 'blocker'         },
+  { author: 'Aditya Simhadri',working_on: 'RFI response – Publix',        priority: 'medium',    text: 'Compliance docs attached, unsure if our data residency answer covers their EU requirement. Can someone from legal confirm?',                           status: 'have_a_question' },
+  { author: 'Janvi',          working_on: 'Onboarding flow revamp',        priority: 'high',      text: 'Completed user research interviews (8/10 done). Key insight: users drop off at contract template selection step. Sharing findings deck by EOD Fri.',   status: 'in_progress'     },
+  { author: 'Janvi',          working_on: 'Q3 success metrics dashboard',  priority: 'medium',    text: 'Dashboard is live in staging. Waiting for Ravi sign-off on the churn cohort definition before we share with the board.',                              status: 'need_your_input' },
+  { author: 'Sunil',          working_on: 'API rate limit investigation',  priority: 'very_high', text: 'Root cause found: bulk export jobs not respecting the per-org token bucket. Fix deployed to staging, monitoring in prod from tomorrow.',               status: 'in_progress'     },
+  { author: 'Vibha',          working_on: 'Brand refresh – copy',          priority: 'medium',    text: 'All homepage + product page copy delivered to Sai Charan. Starting case study rewrites this week.',                                                   status: 'done'            },
+  { author: 'Hitesh',         working_on: 'Enterprise SSO rollout',        priority: 'high',      text: 'Okta integration working for 3 of 5 pilot customers. Two customers still on legacy IdP — need eng support to test SAML fallback.',                    status: 'blocker'         },
+  { author: 'Raghu',          working_on: 'Data pipeline optimisation',    priority: 'medium',    text: 'Reduced nightly sync time from 4.2 h to 58 min. Will document the approach and hand off to Sunil.',                                                  status: 'done'            },
+];
+
 export async function getUpdates() {
   const { data, error } = await supabase
     .from('team_updates')
     .select('*')
     .order('created_at', { ascending: false });
   if (error) throw error;
+
+  if ((data || []).length === 0) {
+    const rows = SEED.map((s, i) => ({
+      id:         crypto.randomUUID(),
+      author:     s.author,
+      working_on: s.working_on,
+      priority:   s.priority,
+      text:       s.text,
+      status:     s.status,
+      ravi_notes: '',
+      created_at: new Date(Date.now() - i * 3600000).toISOString(),
+    }));
+    await supabase.from('team_updates').insert(rows);
+    return rows.map(r => ({
+      id: r.id, author: r.author, workingOn: r.working_on,
+      priority: r.priority, text: r.text, status: r.status,
+      raviNotes: '', createdAt: r.created_at,
+    }));
+  }
+
   return (data || []).map(r => ({
     id:          r.id,
     author:      r.author,
