@@ -1,6 +1,6 @@
 import {
   LayoutDashboard, CheckSquare, CheckCircle, SkipForward,
-  Image, Users, CalendarDays, MessageSquare, LogOut, Zap, ShieldCheck,
+  Image, Users, CalendarDays, MessageSquare, LogOut, Zap, ShieldCheck, ClipboardCheck,
 } from 'lucide-react';
 import { logout, getAccount, CLIENT_ID } from '../lib/auth';
 import AppIcon from './AppIcon';
@@ -15,6 +15,7 @@ const ADMIN_NAV = [
   { id: 'updates',   label: 'Team Updates',         icon: MessageSquare   },
   { id: 'priorities',label: 'Priorities',           icon: Zap             },
   { id: 'weekend',   label: 'Weekend Availability', icon: CalendarDays    },
+  { id: 'approvals', label: 'Approvals',            icon: ClipboardCheck  },
   { id: 'workforce', label: 'Team Report',          icon: Users           },
   { id: 'photos',    label: 'Photos',               icon: Image           },
   { section: 'Config' },
@@ -23,9 +24,10 @@ const ADMIN_NAV = [
 
 const MEMBER_NAV = [
   { section: 'My Submissions' },
-  { id: 'updates',    label: 'Team Updates',         icon: MessageSquare },
-  { id: 'priorities', label: 'My Priorities',        icon: Zap           },
-  { id: 'weekend',    label: 'Weekend Availability', icon: CalendarDays  },
+  { id: 'updates',    label: 'Team Updates',         icon: MessageSquare  },
+  { id: 'priorities', label: 'My Priorities',        icon: Zap            },
+  { id: 'weekend',    label: 'Weekend Availability', icon: CalendarDays   },
+  { id: 'approvals',  label: 'Approvals',            icon: ClipboardCheck },
 ];
 
 export default function Sidebar({ activeTab, onTabChange, counts, isAdmin }) {

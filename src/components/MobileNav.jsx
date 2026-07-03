@@ -2,7 +2,7 @@ import { useState } from 'react';
 import {
   LayoutDashboard, CheckSquare, CheckCircle, SkipForward,
   MessageSquare, CalendarDays, Zap, Users, Image,
-  ChevronDown, X, Menu, ShieldCheck,
+  ChevronDown, X, Menu, ShieldCheck, ClipboardCheck,
 } from 'lucide-react';
 import AppIcon from './AppIcon';
 
@@ -19,11 +19,12 @@ const ADMIN_NAV = [
   {
     section: 'Team',
     children: [
-      { id: 'updates',    label: 'Team Updates',         icon: MessageSquare },
-      { id: 'priorities', label: 'Priorities',           icon: Zap           },
-      { id: 'weekend',    label: 'Weekend Availability', icon: CalendarDays  },
-      { id: 'workforce',  label: 'Team Report',          icon: Users         },
-      { id: 'photos',     label: 'Photos',               icon: Image         },
+      { id: 'updates',    label: 'Team Updates',         icon: MessageSquare  },
+      { id: 'priorities', label: 'Priorities',           icon: Zap            },
+      { id: 'weekend',    label: 'Weekend Availability', icon: CalendarDays   },
+      { id: 'approvals',  label: 'Approvals',            icon: ClipboardCheck },
+      { id: 'workforce',  label: 'Team Report',          icon: Users          },
+      { id: 'photos',     label: 'Photos',               icon: Image          },
     ],
   },
   {
@@ -38,9 +39,10 @@ const MEMBER_NAV = [
   {
     section: 'My Submissions',
     children: [
-      { id: 'updates',    label: 'Team Updates',         icon: MessageSquare },
-      { id: 'priorities', label: 'My Priorities',        icon: Zap           },
-      { id: 'weekend',    label: 'Weekend Availability', icon: CalendarDays  },
+      { id: 'updates',    label: 'Team Updates',         icon: MessageSquare  },
+      { id: 'priorities', label: 'My Priorities',        icon: Zap            },
+      { id: 'weekend',    label: 'Weekend Availability', icon: CalendarDays   },
+      { id: 'approvals',  label: 'Approvals',            icon: ClipboardCheck },
     ],
   },
 ];

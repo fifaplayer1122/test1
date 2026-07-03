@@ -10,6 +10,7 @@ import WeekendAvailability from './components/WeekendAvailability';
 import TeamUpdates from './components/TeamUpdates';
 import Dashboard from './components/Dashboard';
 import TeamRoles from './components/TeamRoles';
+import Approvals from './components/Approvals';
 import AuthGate from './components/AuthGate';
 import Spinner from './components/Spinner';
 import AppIcon from './components/AppIcon';
@@ -30,6 +31,7 @@ const PAGE_TITLES = {
   priorities: 'Team Priorities',
   updates:    'Team Updates',
   roles:      'Members & Roles',
+  approvals:  'Approval Requests',
 };
 
 // Tabs only admins (Ravi, Pranesh) can access
@@ -115,6 +117,8 @@ function AppInner() {
             <WeekendAvailability defaultSection="weekend" />
           ) : activeTab === 'priorities' ? (
             <WeekendAvailability defaultSection="priority" />
+          ) : activeTab === 'approvals' ? (
+            <Approvals />
           ) : activeTab === 'updates' ? (
             <TeamUpdates />
           ) : activeTab === 'roles' && isAdmin ? (
