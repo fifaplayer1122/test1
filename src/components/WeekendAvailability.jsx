@@ -458,26 +458,38 @@ export default function TeamHub({ defaultSection = 'priority' }) {
   const saveWeekend = async (entry, nameOverride) => {
     const target = nameOverride || editWeekend;
     if (!target) return;
-    await upsertMemberEntry(target, entry);
-    invalidate();
-    setEditWeekend(null);
+    try {
+      await upsertMemberEntry(target, entry);
+      invalidate();
+      setEditWeekend(null);
+    } catch (err) {
+      alert('Failed to save availability: ' + (err.message || err));
+    }
   };
 
   const handlePrioritySave = async ({ title, priorityLevel }) => {
     if (!priorityModal) return;
     const { item, memberName } = priorityModal;
-    if (item) {
-      await updateMemberPriority(item.id, { title, priorityLevel });
-    } else {
-      await addMemberPriority(memberName, title, priorityLevel);
+    try {
+      if (item) {
+        await updateMemberPriority(item.id, { title, priorityLevel });
+      } else {
+        await addMemberPriority(memberName, title, priorityLevel);
+      }
+      invalidatePriorities();
+      setPriorityModal(null);
+    } catch (err) {
+      alert('Failed to save priority: ' + (err.message || err));
     }
-    invalidatePriorities();
-    setPriorityModal(null);
   };
 
   const handlePriorityDelete = async (id) => {
-    await deleteMemberPriority(id);
-    invalidatePriorities();
+    try {
+      await deleteMemberPriority(id);
+      invalidatePriorities();
+    } catch (err) {
+      alert('Failed to delete priority: ' + (err.message || err));
+    }
   };
 
   const handleManageSave = async (members) => {
@@ -648,76 +660,91 @@ export default function TeamHub({ defaultSection = 'priority' }) {
             </div>
           )}
 
-          {/* Desktop table */}
-          <div className="hidden md:block bg-white border border-gray-200 rounded-2xl overflow-hidden shadow-sm">
-            <table className="w-full text-sm">
-              <thead className="bg-gray-50 border-b border-gray-100">
-                <tr>
-                  <th className="px-5 py-3 text-left text-xs font-semibold text-gray-400 uppercase tracking-wide w-40">Name</th>
-                  <th className="px-5 py-3 text-left text-xs font-semibold text-gray-400 uppercase tracking-wide">{fmtDay(sat)}</th>
-                  <th className="px-5 py-3 text-left text-xs font-semibold text-gray-400 uppercase tracking-wide w-28">Sat Time</th>
-                  <th className="px-5 py-3 text-left text-xs font-semibold text-gray-400 uppercase tracking-wide">{fmtDay(sun)}</th>
-                  <th className="px-5 py-3 text-left text-xs font-semibold text-gray-400 uppercase tracking-wide w-28">Sun Time</th>
-                  <th className="px-5 py-3 text-left text-xs font-semibold text-gray-400 uppercase tracking-wide">Notes</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-100">
-                {data.members.filter(m => !ADMINS.includes(m)).map(member => {
-                  const e = data.entries[member] || {};
-                  const isMe = identity === member;
-                  const editable = canEdit(member);
-                  return (
-                    <tr key={member} onClick={() => editable && setEditWeekend(member)}
-                      className={`transition-colors ${editable ? 'cursor-pointer hover:bg-blue-50/40' : ''} ${isMe ? 'bg-blue-50/30' : ''}`}>
-                      <td className="px-5 py-3.5">
-                        <div className="flex items-center gap-2">
-                          <span className="w-7 h-7 rounded-full bg-gray-100 text-gray-600 text-xs font-bold flex items-center justify-center flex-shrink-0">{member[0]}</span>
-                          <span className={`font-medium ${isMe ? 'text-blue-700' : 'text-gray-800'}`}>{member}</span>
-                          {ADMINS.includes(member) && <span className="text-xs bg-blue-100 text-blue-600 px-1.5 py-0.5 rounded-full font-medium">Admin</span>}
-                        </div>
-                      </td>
-                      <td className="px-5 py-3.5"><StatusBadge status={e.sat || 'none'} /></td>
-                      <td className="px-5 py-3.5 text-xs text-gray-500">{e.satTime || <span className="text-gray-300">—</span>}</td>
-                      <td className="px-5 py-3.5"><StatusBadge status={e.sun || 'none'} /></td>
-                      <td className="px-5 py-3.5 text-xs text-gray-500">{e.sunTime || <span className="text-gray-300">—</span>}</td>
-                      <td className="px-5 py-3.5 text-xs text-gray-500 max-w-xs truncate">{e.topics || <span className="text-gray-300">—</span>}</td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-
-          {/* Mobile cards */}
-          <div className="md:hidden space-y-2">
-            {data.members.filter(m => !ADMINS.includes(m)).map(member => {
-              const e = data.entries[member] || {};
-              const isMe = identity === member;
-              const editable = canEdit(member);
-              return (
-                <div key={member} onClick={() => editable && setEditWeekend(member)}
-                  className={`bg-white border rounded-2xl px-4 py-3.5 shadow-sm transition-all ${isMe ? 'border-blue-200 ring-1 ring-blue-100' : 'border-gray-200'} ${editable ? 'cursor-pointer active:scale-95' : ''}`}>
-                  <div className="flex items-center gap-2 mb-2.5">
-                    <span className="w-8 h-8 rounded-full bg-gray-100 text-gray-600 text-sm font-bold flex items-center justify-center">{member[0]}</span>
-                    <span className={`font-semibold text-sm ${isMe ? 'text-blue-700' : 'text-gray-800'}`}>{member}</span>
-                    {ADMINS.includes(member) && <span className="text-xs bg-blue-100 text-blue-600 px-1.5 py-0.5 rounded-full font-medium">Admin</span>}
-                    {isMe && <span className="ml-auto text-xs text-blue-500 font-medium">Tap to edit</span>}
-                  </div>
-                  <div className="grid grid-cols-2 gap-2 mb-2">
-                    <div className="bg-gray-50 rounded-xl px-3 py-2">
-                      <p className="text-xs text-gray-400 mb-1">Saturday</p>
-                      <StatusBadge status={e.sat || 'none'} />
-                    </div>
-                    <div className="bg-gray-50 rounded-xl px-3 py-2">
-                      <p className="text-xs text-gray-400 mb-1">Sunday</p>
-                      <StatusBadge status={e.sun || 'none'} />
-                    </div>
-                  </div>
-                  {e.topics && <p className="text-xs text-gray-500 truncate">{e.topics}</p>}
+          {(() => {
+            // Non-admins only see their own row; admins see all
+            const weekendMembers = data.members.filter(m =>
+              !ADMINS.includes(m) && (isAdmin || m === identity)
+            );
+            return (
+              <>
+                {/* Desktop table */}
+                <div className="hidden md:block bg-white border border-gray-200 rounded-2xl overflow-hidden shadow-sm">
+                  <table className="w-full text-sm">
+                    <thead className="bg-gray-50 border-b border-gray-100">
+                      <tr>
+                        {isAdmin && <th className="px-5 py-3 text-left text-xs font-semibold text-gray-400 uppercase tracking-wide w-40">Name</th>}
+                        <th className="px-5 py-3 text-left text-xs font-semibold text-gray-400 uppercase tracking-wide">{fmtDay(sat)}</th>
+                        <th className="px-5 py-3 text-left text-xs font-semibold text-gray-400 uppercase tracking-wide w-28">Sat Time</th>
+                        <th className="px-5 py-3 text-left text-xs font-semibold text-gray-400 uppercase tracking-wide">{fmtDay(sun)}</th>
+                        <th className="px-5 py-3 text-left text-xs font-semibold text-gray-400 uppercase tracking-wide w-28">Sun Time</th>
+                        <th className="px-5 py-3 text-left text-xs font-semibold text-gray-400 uppercase tracking-wide">Notes</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-100">
+                      {weekendMembers.map(member => {
+                        const e = data.entries[member] || {};
+                        const editable = canEdit(member);
+                        return (
+                          <tr key={member} onClick={() => editable && setEditWeekend(member)}
+                            className={`transition-colors ${editable ? 'cursor-pointer hover:bg-blue-50/40' : ''} bg-blue-50/20`}>
+                            {isAdmin && (
+                              <td className="px-5 py-3.5">
+                                <div className="flex items-center gap-2">
+                                  <span className="w-7 h-7 rounded-full bg-gray-100 text-gray-600 text-xs font-bold flex items-center justify-center flex-shrink-0">{member[0]}</span>
+                                  <span className="font-medium text-gray-800">{member}</span>
+                                </div>
+                              </td>
+                            )}
+                            <td className="px-5 py-3.5"><StatusBadge status={e.sat || 'none'} /></td>
+                            <td className="px-5 py-3.5 text-xs text-gray-500">{e.satTime || <span className="text-gray-300">—</span>}</td>
+                            <td className="px-5 py-3.5"><StatusBadge status={e.sun || 'none'} /></td>
+                            <td className="px-5 py-3.5 text-xs text-gray-500">{e.sunTime || <span className="text-gray-300">—</span>}</td>
+                            <td className="px-5 py-3.5 text-xs text-gray-500 max-w-xs truncate">{e.topics || <span className="text-gray-300">—</span>}</td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
                 </div>
-              );
-            })}
-          </div>
+
+                {/* Mobile cards */}
+                <div className="md:hidden space-y-2">
+                  {weekendMembers.map(member => {
+                    const e = data.entries[member] || {};
+                    const editable = canEdit(member);
+                    return (
+                      <div key={member} onClick={() => editable && setEditWeekend(member)}
+                        className={`bg-white border border-blue-200 ring-1 ring-blue-100 rounded-2xl px-4 py-3.5 shadow-sm transition-all ${editable ? 'cursor-pointer active:scale-95' : ''}`}>
+                        {isAdmin && (
+                          <div className="flex items-center gap-2 mb-2.5">
+                            <span className="w-8 h-8 rounded-full bg-gray-100 text-gray-600 text-sm font-bold flex items-center justify-center">{member[0]}</span>
+                            <span className="font-semibold text-sm text-gray-800">{member}</span>
+                          </div>
+                        )}
+                        {editable && !isAdmin && (
+                          <div className="flex items-center justify-between mb-2.5">
+                            <p className="text-sm font-semibold text-blue-700">Your Availability</p>
+                            <span className="text-xs text-blue-500 font-medium">Tap to edit</span>
+                          </div>
+                        )}
+                        <div className="grid grid-cols-2 gap-2 mb-2">
+                          <div className="bg-gray-50 rounded-xl px-3 py-2">
+                            <p className="text-xs text-gray-400 mb-1">Saturday</p>
+                            <StatusBadge status={e.sat || 'none'} />
+                          </div>
+                          <div className="bg-gray-50 rounded-xl px-3 py-2">
+                            <p className="text-xs text-gray-400 mb-1">Sunday</p>
+                            <StatusBadge status={e.sun || 'none'} />
+                          </div>
+                        </div>
+                        {e.topics && <p className="text-xs text-gray-500 truncate">{e.topics}</p>}
+                      </div>
+                    );
+                  })}
+                </div>
+              </>
+            );
+          })()}
 
           {/* Submit prompt for members */}
           {identity && !isAdmin && !(data.entries[identity]?.sat && data.entries[identity]?.sat !== 'none') && (

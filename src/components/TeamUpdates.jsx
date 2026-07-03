@@ -1,11 +1,11 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useQueryClient, useQuery } from '@tanstack/react-query';
 import { Plus, X, ChevronDown, ChevronUp, MoreHorizontal, Pencil, Trash2, MessageSquare } from 'lucide-react';
 import {
   getUpdates, addUpdate, updateUpdate, deleteUpdate, saveUpdateNote,
   PRIORITY_LEVELS, STATUS_OPTIONS, getPriority, getStatus,
 } from '../lib/updatesStorage';
-import { ADMINS, getIdentity } from '../lib/teamStorage';
+import { ADMINS, getIdentity, getWeekendData } from '../lib/teamStorage';
 import { getAccount, CLIENT_ID } from '../lib/auth';
 
 const AVATAR_COLORS = [
@@ -20,7 +20,7 @@ function resolveIdentity() {
   const authEnabled = CLIENT_ID && CLIENT_ID !== 'YOUR_CLIENT_ID';
   if (authEnabled) {
     const account = getAccount();
-    if (account) return (account.name || account.username || '').split(' ')[0];
+    if (account) return (account.name || account.username || '');
   }
   return getIdentity();
 }
@@ -208,10 +208,23 @@ function UpdateRow({ update, isAdmin, isMine, onEdit, onDelete, onSaveNote, avat
 }
 
 export default function TeamUpdates() {
-  const identity = resolveIdentity();
-  const isAdmin  = ADMINS.includes(identity);
-  const qc       = useQueryClient();
+  const [identity, setIdentity] = useState(resolveIdentity);
+  const qc = useQueryClient();
 
+  // Load members (shared cache with WeekendAvailability) for identity matching
+  const { data: hubData } = useQuery({ queryKey: ['teamHub'], queryFn: getWeekendData });
+  const members = hubData?.members || [];
+
+  // Match full Outlook name (e.g. "Aditya Simhadri") to the exact member record
+  useEffect(() => {
+    if (!identity || members.length === 0) return;
+    if (members.includes(identity) || ADMINS.includes(identity)) return;
+    const firstName = identity.split(' ')[0];
+    const match = members.find(m => m === firstName || m.split(' ')[0] === firstName);
+    if (match) setIdentity(match);
+  }, [members]);
+
+  const isAdmin = ADMINS.some(a => identity === a || (identity || '').split(' ')[0] === a);
   const { data: updates = [] } = useQuery({ queryKey: ['updates'], queryFn: getUpdates });
 
   const [modal, setModal]       = useState(null); // null | { existing: null|update }
@@ -221,13 +234,17 @@ export default function TeamUpdates() {
   const invalidate = () => qc.invalidateQueries({ queryKey: ['updates'] });
 
   const handleSave = async (fields) => {
-    if (modal.existing) {
-      await updateUpdate(modal.existing.id, fields);
-    } else {
-      await addUpdate({ author: identity, ...fields });
+    try {
+      if (modal.existing) {
+        await updateUpdate(modal.existing.id, fields);
+      } else {
+        await addUpdate({ author: identity, ...fields });
+      }
+      invalidate();
+      setModal(null);
+    } catch (err) {
+      alert('Failed to save update: ' + (err.message || err));
     }
-    invalidate();
-    setModal(null);
   };
 
   const handleDelete = async (id) => {
