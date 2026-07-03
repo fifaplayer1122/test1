@@ -77,8 +77,19 @@ export default function TaskTable({ tasks, tab }) {
   const sorted = sortTasks(tasks);
 
   const invalidate = () => queryClient.invalidateQueries({ queryKey: ['tasks'] });
-  const updateTask = (id, updates) => { dbUpdateTask(id, updates).then(invalidate); };
-  const deleteTask = (id) => { dbDeleteTask(id).then(invalidate); };
+
+  const updateTask = (id, updates) => {
+    // Optimistic update — move task immediately in the UI
+    queryClient.setQueryData(['tasks'], (old = []) =>
+      old.map(t => t.id === id ? { ...t, ...updates } : t)
+    );
+    dbUpdateTask(id, updates).then(invalidate);
+  };
+
+  const deleteTask = (id) => {
+    queryClient.setQueryData(['tasks'], (old = []) => (old || []).filter(t => t.id !== id));
+    dbDeleteTask(id).then(invalidate);
+  };
 
   const markDone = (task) => { setDoneTask(task); setDoneRemark(''); };
   const confirmDone = () => {
