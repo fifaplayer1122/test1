@@ -115,12 +115,46 @@ export async function saveMembers(memberNames) {
 
 // ── Member priorities (multiple items per member) ─────────────────────────────
 
+const PRIORITY_SEED = [
+  { member_name: 'Pranesh',         title: 'CLM competitive positioning vs Coupa & Tonkea — draft response doc',   priority_level: 'very_high' },
+  { member_name: 'Pranesh',         title: 'Dual-track pitch framework (standalone CLM vs platform)',               priority_level: 'high'      },
+  { member_name: 'Sai Charan',      title: 'Website redesign — homepage hero + product pages',                     priority_level: 'high'      },
+  { member_name: 'Sai Charan',      title: 'Mobile responsiveness audit across all landing pages',                 priority_level: 'medium'    },
+  { member_name: 'Aditya Simhadri', title: 'RFI response for Publix — compliance & data residency section',        priority_level: 'high'      },
+  { member_name: 'Aditya Simhadri', title: 'Customer onboarding checklist for Q3 enterprise deals',                priority_level: 'medium'    },
+  { member_name: 'Janvi',           title: 'User research synthesis — onboarding drop-off root cause',             priority_level: 'very_high' },
+  { member_name: 'Janvi',           title: 'Q3 success metrics dashboard — churn cohort definition sign-off',      priority_level: 'high'      },
+  { member_name: 'Sunil',           title: 'Fix API rate limit bug on bulk export (root cause found)',              priority_level: 'very_high' },
+  { member_name: 'Sunil',           title: 'Tech debt: migrate auth service to new token format',                  priority_level: 'medium'    },
+  { member_name: 'Vibha',           title: 'Brand refresh copy — homepage, product pages & case studies',          priority_level: 'high'      },
+  { member_name: 'Hitesh',          title: 'Enterprise SSO rollout — Okta SAML fallback for 2 pilot customers',   priority_level: 'very_high' },
+  { member_name: 'Hitesh',          title: 'Support escalation playbook for enterprise tier',                      priority_level: 'medium'    },
+  { member_name: 'Raghu',           title: 'Data pipeline optimisation — nightly sync from 4.2h → 58min done',    priority_level: 'high'      },
+  { member_name: 'Raghu',           title: 'Document pipeline approach and hand off to Sunil',                     priority_level: 'low'       },
+  { member_name: 'Pooja',           title: 'Legal review of updated MSA template for US customers',                priority_level: 'high'      },
+  { member_name: 'Ramakrishna',     title: 'DevOps: set up staging environment parity with prod',                  priority_level: 'medium'    },
+  { member_name: 'Sai Varma',       title: 'Integrate Stripe billing for self-serve plan upgrades',                priority_level: 'high'      },
+];
+
 export async function getMemberPriorities() {
   const { data, error } = await supabase
     .from('member_priorities')
     .select('*')
     .order('created_at', { ascending: true });
   if (error) throw error;
+
+  if ((data || []).length === 0) {
+    const rows = PRIORITY_SEED.map((s, i) => ({
+      id:             crypto.randomUUID(),
+      member_name:    s.member_name,
+      title:          s.title,
+      priority_level: s.priority_level,
+      created_at:     new Date(Date.now() + i * 1000).toISOString(),
+    }));
+    await supabase.from('member_priorities').insert(rows);
+    return rows;
+  }
+
   return data || [];
 }
 
