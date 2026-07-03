@@ -12,7 +12,7 @@ export async function getTasks() {
   // One-time migration: if DB is empty, pull from localStorage (or use defaults)
   if (data.length === 0) {
     const local = localStorage.getItem('ceo_tasks');
-    const seed = local ? JSON.parse(local) : DEFAULT_TASKS;
+    const seed = local ? JSON.parse(local) : [];
     const rows = seed.map(t => ({
       id:         t.id || crypto.randomUUID(),
       title:      t.title,
