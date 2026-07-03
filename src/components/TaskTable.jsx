@@ -51,6 +51,8 @@ export default function TaskTable({ tasks, tab }) {
   const [editingId, setEditingId] = useState(null);
   const [editData, setEditData]   = useState({});
   const [deleteId, setDeleteId]   = useState(null);
+  const [doneTask, setDoneTask]   = useState(null); // task pending done confirmation
+  const [doneRemark, setDoneRemark] = useState('');
   const [sortBy, setSortBy]       = useState('priority');
   const queryClient = useQueryClient();
 
@@ -77,6 +79,13 @@ export default function TaskTable({ tasks, tab }) {
   const invalidate = () => queryClient.invalidateQueries({ queryKey: ['tasks'] });
   const updateTask = (id, updates) => { dbUpdateTask(id, updates).then(invalidate); };
   const deleteTask = (id) => { dbDeleteTask(id).then(invalidate); };
+
+  const markDone = (task) => { setDoneTask(task); setDoneRemark(''); };
+  const confirmDone = () => {
+    if (!doneTask) return;
+    updateTask(doneTask.id, { status: 'done', notes: doneRemark.trim() || doneTask.notes });
+    setDoneTask(null);
+  };
   const startEdit  = (task) => { setEditingId(task.id); setEditData({ title: task.title, priority: task.priority, notes: task.notes || '', eta: task.eta || '' }); };
   const saveEdit   = (id) => { if (!editData.title?.trim()) return; updateTask(id, { ...editData, eta: editData.eta || undefined }); setEditingId(null); };
   const cancelEdit = () => setEditingId(null);
@@ -102,6 +111,47 @@ export default function TaskTable({ tasks, tab }) {
         onConfirm={() => { deleteTask(deleteId); setDeleteId(null); }}
         onCancel={() => setDeleteId(null)}
       />
+
+      {/* ── Done remark modal ── */}
+      {doneTask && (
+        <div className="fixed inset-0 z-50 bg-black/40 flex items-end sm:items-center justify-center p-0 sm:p-4" onClick={() => setDoneTask(null)}>
+          <div className="bg-white rounded-t-2xl sm:rounded-2xl shadow-xl w-full sm:max-w-md" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between px-5 pt-5 pb-4 border-b border-gray-100">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-xl bg-green-100 flex items-center justify-center">
+                  <Check size={16} className="text-green-600" />
+                </div>
+                <div>
+                  <p className="text-sm font-semibold text-gray-900">Mark as Done</p>
+                  <p className="text-xs text-gray-400 truncate max-w-[220px]">{doneTask.title}</p>
+                </div>
+              </div>
+              <button onClick={() => setDoneTask(null)} className="text-gray-400 hover:text-gray-600 p-1 rounded-lg hover:bg-gray-100">
+                <X size={18} />
+              </button>
+            </div>
+            <div className="px-5 py-4">
+              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Done remark <span className="text-gray-300 font-normal normal-case">(optional)</span></p>
+              <textarea
+                rows={3}
+                value={doneRemark}
+                onChange={e => setDoneRemark(e.target.value)}
+                autoFocus
+                placeholder="What was the outcome? Any follow-ups or notes?"
+                className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm resize-none focus:outline-none focus:border-green-400"
+                onKeyDown={e => { if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) confirmDone(); }}
+              />
+              <p className="text-xs text-gray-400 mt-1">⌘+Enter to confirm</p>
+            </div>
+            <div className="flex gap-2.5 px-5 pb-5">
+              <button onClick={() => setDoneTask(null)} className="flex-1 py-2.5 border border-gray-200 text-gray-600 rounded-xl text-sm font-semibold hover:bg-gray-50">Cancel</button>
+              <button onClick={confirmDone} className="flex-1 py-2.5 bg-green-600 text-white rounded-xl text-sm font-semibold hover:bg-green-700">
+                Mark Done
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ── Header bar with sort ── */}
       <div className="flex items-center justify-between mb-3 bg-white border border-gray-200 rounded-xl px-3 py-2 shadow-sm">
@@ -177,7 +227,7 @@ export default function TaskTable({ tasks, tab }) {
                       <div className="flex gap-1">
                         {tab === 'active' ? (
                           <>
-                            <ActionBtn onClick={() => updateTask(task.id, { status: 'done' })} icon={Check} color="text-gray-400 hover:bg-green-50 hover:text-green-600" title="Mark done" />
+                            <ActionBtn onClick={() => markDone(task)} icon={Check} color="text-gray-400 hover:bg-green-50 hover:text-green-600" title="Mark done" />
                             <ActionBtn onClick={() => updateTask(task.id, { status: 'skip' })} icon={SkipForward} color="text-gray-400 hover:bg-yellow-50 hover:text-yellow-600" title="Skip" />
                           </>
                         ) : (
@@ -255,7 +305,7 @@ export default function TaskTable({ tasks, tab }) {
             <div className="px-4 space-y-2">
               {tab === 'active' ? (
                 <>
-                  <button onClick={() => sheetAction(() => updateTask(sheetTask.id, { status: 'done' }))}
+                  <button onClick={() => sheetAction(() => markDone(sheetTask))}
                     className="w-full flex items-center gap-3 px-4 py-4 rounded-2xl bg-green-50 text-green-700 font-semibold text-sm active:bg-green-100">
                     <Check size={20} /> Mark as Done
                   </button>
