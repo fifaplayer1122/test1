@@ -113,6 +113,17 @@ export async function saveMembers(memberNames) {
   if (error) throw error;
 }
 
+// Auto-register a smartdocs.ai employee on first login.
+// Inserts them into the members table if not already present.
+export async function ensureMember(name) {
+  if (!name || ADMINS.some(a => name === a || name.split(' ')[0] === a)) return;
+  const { data } = await supabase.from('members').select('name').eq('name', name).maybeSingle();
+  if (data) return; // already exists
+  const { data: maxRow } = await supabase.from('members').select('sort_order').order('sort_order', { ascending: false }).limit(1).maybeSingle();
+  const nextOrder = (maxRow?.sort_order ?? -1) + 1;
+  await supabase.from('members').insert({ name, sort_order: nextOrder });
+}
+
 // ── Member priorities (multiple items per member) ─────────────────────────────
 
 const PRIORITY_SEED = [

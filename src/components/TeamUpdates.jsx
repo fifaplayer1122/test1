@@ -5,7 +5,7 @@ import {
   getUpdates, addUpdate, updateUpdate, deleteUpdate, saveUpdateNote,
   PRIORITY_LEVELS, STATUS_OPTIONS, getPriority, getStatus,
 } from '../lib/updatesStorage';
-import { ADMINS, getIdentity, getWeekendData } from '../lib/teamStorage';
+import { ADMINS, getIdentity, getWeekendData, ensureMember } from '../lib/teamStorage';
 import { getAccount, CLIENT_ID } from '../lib/auth';
 
 const AVATAR_COLORS = [
@@ -215,14 +215,17 @@ export default function TeamUpdates() {
   const { data: hubData } = useQuery({ queryKey: ['teamHub'], queryFn: getWeekendData });
   const members = hubData?.members || [];
 
-  // Match full Outlook name (e.g. "Aditya Simhadri") to the exact member record
+  // Match full Outlook name to member record; auto-register new smartdocs.ai employees
   useEffect(() => {
     if (!identity || members.length === 0) return;
-    if (members.includes(identity) || ADMINS.includes(identity)) return;
+    const isAdm = ADMINS.some(a => identity === a || identity.split(' ')[0] === a);
+    if (isAdm) return;
+    if (members.includes(identity)) { ensureMember(identity); return; }
     const firstName = identity.split(' ')[0];
     const match = members.find(m => m === firstName || m.split(' ')[0] === firstName);
-    if (match) setIdentity(match);
-  }, [members]);
+    if (match) { setIdentity(match); ensureMember(match); }
+    else ensureMember(identity);
+  }, [members, identity]);
 
   const isAdmin = ADMINS.some(a => identity === a || (identity || '').split(' ')[0] === a);
   const { data: updates = [] } = useQuery({ queryKey: ['updates'], queryFn: getUpdates });

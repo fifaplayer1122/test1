@@ -10,7 +10,7 @@ import {
   getNextWeekend, fmtDate, fmtDay,
   getWeekendData, upsertMemberEntry, saveMembers,
   getMemberPriorities, addMemberPriority, updateMemberPriority, deleteMemberPriority,
-  getIdentity, saveIdentity,
+  getIdentity, saveIdentity, ensureMember,
 } from '../lib/teamStorage';
 import { getAccount, CLIENT_ID } from '../lib/auth';
 
@@ -430,23 +430,38 @@ export default function TeamHub({ defaultSection = 'priority' }) {
 
   const authEnabled = CLIENT_ID && CLIENT_ID !== 'YOUR_CLIENT_ID';
   const { sat, sun } = getNextWeekend();
-  const isAdmin = ADMINS.includes(identity);
+  const isAdmin = ADMINS.some(a => identity === a || (identity || '').split(' ')[0] === a);
 
   const { data: priorityItems = [] } = useQuery({
     queryKey: ['memberPriorities'],
     queryFn: getMemberPriorities,
   });
 
-  // Match full Outlook name (e.g. "Aditya Simhadri") to member record (same string in DB)
+  // Match full Outlook name to member record; auto-register new smartdocs.ai employees
   useEffect(() => {
-    if (!identity || data.members.length === 0) return;
-    if (data.members.includes(identity) || ADMINS.includes(identity)) return;
+    if (!identity) return;
+    const isAdm = ADMINS.some(a => identity === a || identity.split(' ')[0] === a);
+    if (isAdm) return;
+
+    if (data.members.length === 0) return;
+
+    if (data.members.includes(identity)) {
+      // Already in the list — make sure they're in DB too
+      ensureMember(identity);
+      return;
+    }
+
     const firstName = identity.split(' ')[0];
     const match = data.members.find(m => m === firstName || m.split(' ')[0] === firstName);
-    if (match) { setIdentity(match); return; }
-    // If auth enabled and no match found, still show id modal as fallback
-    if (!authEnabled) setShowIdModal(true);
-  }, [data.members]);
+    if (match) {
+      setIdentity(match);
+      ensureMember(match);
+    } else {
+      // Brand new employee — add them to the members table then refetch
+      ensureMember(identity).then(() => invalidate());
+    }
+    if (!authEnabled && !match) setShowIdModal(true);
+  }, [data.members, identity]);
 
   useEffect(() => {
     if (!identity && !authEnabled) setShowIdModal(true);

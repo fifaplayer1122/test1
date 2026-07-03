@@ -8,7 +8,7 @@ import {
   getApprovals, submitApproval, updateApproval, decideApproval, deleteApproval,
   APPROVAL_CATEGORIES, APPROVAL_PRIORITIES, getCategory, getPriority, getApprovalStatus,
 } from '../lib/approvalsStorage';
-import { ADMINS, getIdentity, getWeekendData } from '../lib/teamStorage';
+import { ADMINS, getIdentity, getWeekendData, ensureMember } from '../lib/teamStorage';
 import { getAccount, CLIENT_ID } from '../lib/auth';
 
 const AVATAR_COLORS = [
@@ -339,11 +339,14 @@ export default function Approvals() {
 
   useEffect(() => {
     if (!identity || members.length === 0) return;
-    if (members.includes(identity) || ADMINS.includes(identity)) return;
+    const isAdm = ADMINS.some(a => identity === a || identity.split(' ')[0] === a);
+    if (isAdm) return;
+    if (members.includes(identity)) { ensureMember(identity); return; }
     const firstName = identity.split(' ')[0];
     const match = members.find(m => m === firstName || m.split(' ')[0] === firstName);
-    if (match) setIdentity(match);
-  }, [members]);
+    if (match) { setIdentity(match); ensureMember(match); }
+    else ensureMember(identity);
+  }, [members, identity]);
 
   const isAdmin = ADMINS.some(a => identity === a || (identity || '').split(' ')[0] === a);
 
