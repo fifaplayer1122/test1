@@ -109,35 +109,56 @@ export default function Dashboard({ onNavigate }) {
   return (
     <div className="space-y-5">
 
-      {/* ── Very High Priority spotlight ── */}
-      {veryHighTasks.length > 0 && (
-        <div className="bg-gradient-to-r from-red-50 to-orange-50 border border-red-200 rounded-2xl p-4">
-          <div className="flex items-center gap-2 mb-3">
-            <Zap size={15} className="text-red-500" />
-            <span className="text-sm font-semibold text-red-700">Needs Immediate Attention</span>
-            <span className="ml-auto text-xs bg-red-100 text-red-600 font-bold px-2 py-0.5 rounded-full">{veryHighTasks.length}</span>
+      {/* ── Needs Immediate Attention (very high tasks + team blockers) ── */}
+      {(() => {
+        const blockerUpdates = updates.filter(u => u.status === 'blocker');
+        const totalUrgent = veryHighTasks.length + blockerUpdates.length;
+        if (totalUrgent === 0) return null;
+        return (
+          <div className="bg-gradient-to-r from-red-50 to-orange-50 border border-red-200 rounded-2xl p-4">
+            <div className="flex items-center gap-2 mb-3">
+              <Zap size={15} className="text-red-500" />
+              <span className="text-sm font-semibold text-red-700">Needs Immediate Attention</span>
+              <span className="ml-auto text-xs bg-red-100 text-red-600 font-bold px-2 py-0.5 rounded-full">{totalUrgent}</span>
+            </div>
+            <div className="space-y-2">
+              {veryHighTasks.map(task => {
+                const badge = formatEtaBadge(task.eta);
+                return (
+                  <button key={task.id} onClick={() => nav('active')}
+                    className="w-full flex items-center gap-2.5 bg-white rounded-xl px-3 py-2.5 border border-red-100 shadow-sm hover:shadow-md active:scale-95 transition-all text-left">
+                    <span className="w-2 h-2 rounded-full bg-red-500 flex-shrink-0" />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-gray-800 truncate">{task.title}</p>
+                      <p className="text-xs text-gray-400">Very High Priority Task</p>
+                    </div>
+                    {badge && <span className={`text-xs font-medium px-2 py-0.5 rounded-full flex-shrink-0 ${badge.cls}`}>{badge.label}</span>}
+                    <ChevronRight size={14} className="text-gray-400 flex-shrink-0" />
+                  </button>
+                );
+              })}
+              {blockerUpdates.map(u => {
+                const color = avatarColor(u.author);
+                return (
+                  <button key={u.id} onClick={() => nav('updates')}
+                    className="w-full flex items-center gap-2.5 bg-white rounded-xl px-3 py-2.5 border border-red-100 shadow-sm hover:shadow-md active:scale-95 transition-all text-left">
+                    <Bell size={14} className="text-red-500 flex-shrink-0" />
+                    <div className={`w-6 h-6 rounded-full bg-gradient-to-br ${color} text-white text-xs font-bold flex items-center justify-center flex-shrink-0`}>
+                      {u.author[0]}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-gray-800 truncate">{u.workingOn || 'Blocker'}</p>
+                      <p className="text-xs text-red-500 truncate">{u.author} · {u.text}</p>
+                    </div>
+                    <span className="text-xs font-semibold bg-red-100 text-red-600 px-2 py-0.5 rounded-full flex-shrink-0">Blocker</span>
+                    <ChevronRight size={14} className="text-gray-400 flex-shrink-0" />
+                  </button>
+                );
+              })}
+            </div>
           </div>
-          <div className="space-y-2">
-            {veryHighTasks.map(task => {
-              const badge = formatEtaBadge(task.eta);
-              return (
-                <button
-                  key={task.id}
-                  onClick={() => nav('active')}
-                  className="w-full flex items-center gap-2.5 bg-white rounded-xl px-3 py-2.5 border border-red-100 shadow-sm hover:shadow-md active:scale-95 transition-all text-left"
-                >
-                  <span className="w-2 h-2 rounded-full bg-red-500 flex-shrink-0" />
-                  <span className="text-sm font-medium text-gray-800 flex-1 truncate">{task.title}</span>
-                  {badge && (
-                    <span className={`text-xs font-medium px-2 py-0.5 rounded-full flex-shrink-0 ${badge.cls}`}>{badge.label}</span>
-                  )}
-                  <ChevronRight size={14} className="text-gray-400 flex-shrink-0" />
-                </button>
-              );
-            })}
-          </div>
-        </div>
-      )}
+        );
+      })()}
 
       {/* ── Stat cards ── */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
