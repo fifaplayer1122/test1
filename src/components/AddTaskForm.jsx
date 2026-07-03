@@ -21,14 +21,21 @@ export default function AddTaskForm() {
   const handleSubmit = (e) => {
     e.preventDefault();
     if (!title.trim()) return;
-    createTask({
-      id:       crypto.randomUUID(),
-      title:    title.trim(),
+    const newTask = {
+      id:         crypto.randomUUID(),
+      title:      title.trim(),
       priority,
-      notes:    notes.trim(),
-      eta:      eta || undefined,
-      status:   'todo',
-    }).then(() => queryClient.invalidateQueries({ queryKey: ['tasks'] }));
+      notes:      notes.trim(),
+      eta:        eta || null,
+      status:     'todo',
+      created_at: new Date().toISOString(),
+    };
+    // Optimistically add to cache immediately
+    queryClient.setQueryData(['tasks'], (old = []) => [...(old || []), newTask]);
+    createTask(newTask).catch(() => {
+      // On failure remove the optimistic entry and refetch
+      queryClient.setQueryData(['tasks'], (old = []) => (old || []).filter(t => t.id !== newTask.id));
+    });
     setTitle(''); setNotes(''); setPriority('medium'); setEta(''); setOpen(false);
   };
 

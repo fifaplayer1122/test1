@@ -76,19 +76,19 @@ export default function TaskTable({ tasks, tab }) {
 
   const sorted = sortTasks(tasks);
 
-  const invalidate = () => queryClient.invalidateQueries({ queryKey: ['tasks'] });
+  const refetch = () => queryClient.invalidateQueries({ queryKey: ['tasks'] });
 
   const updateTask = (id, updates) => {
-    // Optimistic update — move task immediately in the UI
+    // Apply immediately — don't refetch on success (avoids race with Supabase)
     queryClient.setQueryData(['tasks'], (old = []) =>
       old.map(t => t.id === id ? { ...t, ...updates } : t)
     );
-    dbUpdateTask(id, updates).then(invalidate);
+    dbUpdateTask(id, updates).catch(() => refetch()); // only refetch if write failed
   };
 
   const deleteTask = (id) => {
     queryClient.setQueryData(['tasks'], (old = []) => (old || []).filter(t => t.id !== id));
-    dbDeleteTask(id).then(invalidate);
+    dbDeleteTask(id).catch(() => refetch());
   };
 
   const markDone = (task) => { setDoneTask(task); setDoneRemark(''); };
