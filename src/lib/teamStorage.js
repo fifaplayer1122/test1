@@ -47,6 +47,8 @@ export async function getWeekendData() {
       focus:         row.focus || '',
       waitingOnRavi: row.waiting_on_ravi || false,
       waitingReason: row.waiting_reason || '',
+      priorityLevel: row.priority_level || 'medium',
+      raviNotes:     row.ravi_notes || '',
       updatedAt:     row.updated_at,
     };
   }
@@ -92,8 +94,10 @@ export async function upsertMemberEntry(memberName, updates) {
   if (updates.sunTime       !== undefined) row.sun_time       = updates.sunTime;
   if (updates.topics        !== undefined) row.topics         = updates.topics;
   if (updates.focus         !== undefined) row.focus          = updates.focus;
-  if (updates.waitingOnRavi !== undefined) row.waiting_on_ravi = updates.waitingOnRavi;
-  if (updates.waitingReason !== undefined) row.waiting_reason = updates.waitingReason;
+  if (updates.waitingOnRavi   !== undefined) row.waiting_on_ravi  = updates.waitingOnRavi;
+  if (updates.waitingReason   !== undefined) row.waiting_reason   = updates.waitingReason;
+  if (updates.priorityLevel   !== undefined) row.priority_level   = updates.priorityLevel;
+  if (updates.raviNotes       !== undefined) row.ravi_notes       = updates.raviNotes;
 
   const { error } = await supabase
     .from('member_entries')

@@ -145,54 +145,95 @@ function WeekendEditModal({ member, entry, onSave, onClose, isAdmin, allMembers 
   );
 }
 
+/* ─── Priority levels config ─── */
+const PRIORITY_LEVELS = [
+  { value: 'very_high', label: 'Very High', color: 'bg-red-500',    text: 'text-red-600',    bg: 'bg-red-50',    border: 'border-red-300',    pill: 'bg-red-100 text-red-700'    },
+  { value: 'high',      label: 'High',      color: 'bg-orange-400', text: 'text-orange-600', bg: 'bg-orange-50', border: 'border-orange-300',  pill: 'bg-orange-100 text-orange-700' },
+  { value: 'medium',    label: 'Medium',    color: 'bg-yellow-400', text: 'text-yellow-600', bg: 'bg-yellow-50', border: 'border-yellow-300',  pill: 'bg-yellow-100 text-yellow-700' },
+  { value: 'low',       label: 'Low',       color: 'bg-green-400',  text: 'text-green-600',  bg: 'bg-green-50',  border: 'border-green-300',   pill: 'bg-green-100 text-green-700'  },
+];
+function getPL(val) { return PRIORITY_LEVELS.find(p => p.value === val) || PRIORITY_LEVELS[2]; }
+
 /* ─── Priority edit modal ─── */
 function PriorityEditModal({ member, entry, onSave, onClose }) {
-  const [focus, setFocus]         = useState(entry?.focus || '');
-  const [waiting, setWaiting]     = useState(entry?.waitingOnRavi || false);
-  const [waitReason, setWaitReason] = useState(entry?.waitReason || '');
+  const [focus, setFocus]           = useState(entry?.focus || '');
+  const [level, setLevel]           = useState(entry?.priorityLevel || 'medium');
+  const [waiting, setWaiting]       = useState(entry?.waitingOnRavi || false);
+  const [waitReason, setWaitReason] = useState(entry?.waitingReason || '');
+
   return (
     <div className="fixed inset-0 z-50 bg-black/50 flex items-end sm:items-center justify-center p-0 sm:p-4" onClick={onClose}>
-      <div className="bg-white rounded-t-2xl sm:rounded-2xl shadow-xl w-full sm:max-w-sm p-5" onClick={e => e.stopPropagation()}>
-        <div className="flex items-center justify-between mb-4">
+      <div className="bg-white rounded-t-2xl sm:rounded-2xl shadow-xl w-full sm:max-w-md" onClick={e => e.stopPropagation()}>
+
+        {/* Modal header */}
+        <div className="flex items-center justify-between px-5 pt-5 pb-4 border-b border-gray-100">
+          <div className="flex items-center gap-2.5">
+            <span className="w-9 h-9 rounded-full bg-gradient-to-br from-blue-500 to-blue-700 text-white font-bold flex items-center justify-center text-sm flex-shrink-0">{member[0]}</span>
+            <div>
+              <p className="font-semibold text-gray-900 leading-tight">{member}</p>
+              <p className="text-xs text-gray-400 leading-tight">Update your priority</p>
+            </div>
+          </div>
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-600 rounded-lg p-1 hover:bg-gray-100"><X size={18} /></button>
+        </div>
+
+        <div className="px-5 py-4 space-y-5">
+          {/* Priority level */}
           <div>
-            <p className="font-semibold text-gray-900">{member}</p>
-            <p className="text-xs text-gray-400">What are you working on?</p>
+            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2.5">Priority Level</p>
+            <div className="grid grid-cols-4 gap-2">
+              {PRIORITY_LEVELS.map(pl => (
+                <button key={pl.value} onClick={() => setLevel(pl.value)}
+                  className={`flex flex-col items-center gap-1.5 py-2.5 rounded-xl border text-xs font-semibold transition-all ${
+                    level === pl.value
+                      ? `${pl.bg} ${pl.border} ${pl.text}`
+                      : 'border-gray-200 text-gray-400 hover:border-gray-300 hover:bg-gray-50'
+                  }`}>
+                  <span className={`w-2.5 h-2.5 rounded-full ${level === pl.value ? pl.color : 'bg-gray-200'}`} />
+                  {pl.label}
+                </button>
+              ))}
+            </div>
           </div>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600"><X size={18} /></button>
-        </div>
 
-        <div className="mb-4">
-          <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Current Focus</p>
-          <textarea rows={3} value={focus} onChange={e => setFocus(e.target.value)} autoFocus
-            placeholder="What are you currently working on? What's your main goal this week?"
-            className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm resize-none focus:outline-none focus:border-blue-400" />
-        </div>
-
-        <div className="mb-5">
-          <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Waiting on Ravi?</p>
-          <div className="flex gap-2 mb-2">
-            {[{ val: false, label: 'No, all good' }, { val: true, label: 'Yes, need input' }].map(opt => (
-              <button key={String(opt.val)} onClick={() => setWaiting(opt.val)}
-                className={`flex-1 py-2 rounded-xl border text-xs font-medium transition-all ${
-                  waiting === opt.val
-                    ? opt.val ? 'bg-red-50 border-red-200 text-red-600' : 'bg-green-50 border-green-200 text-green-600'
-                    : 'border-gray-200 text-gray-500 hover:border-gray-300'
-                }`}>
-                {opt.label}
-              </button>
-            ))}
+          {/* Current focus */}
+          <div>
+            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">What are you working on?</p>
+            <textarea rows={3} value={focus} onChange={e => setFocus(e.target.value)} autoFocus
+              placeholder="Describe your main focus this week — key tasks, deliverables, goals…"
+              className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm resize-none focus:outline-none focus:border-blue-400 leading-relaxed" />
           </div>
-          {waiting && (
-            <textarea rows={2} value={waitReason} onChange={e => setWaitReason(e.target.value)}
-              placeholder="What decision or input do you need from Ravi?"
-              className="w-full border border-red-200 bg-red-50/40 rounded-xl px-3 py-2 text-sm resize-none focus:outline-none focus:border-red-400 placeholder-red-300" />
-          )}
+
+          {/* Waiting on Ravi */}
+          <div>
+            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Blocked / Waiting on Ravi?</p>
+            <div className="flex gap-2 mb-2.5">
+              {[{ val: false, label: '✓  All good' }, { val: true, label: '⚠  Need input' }].map(opt => (
+                <button key={String(opt.val)} onClick={() => setWaiting(opt.val)}
+                  className={`flex-1 py-2.5 rounded-xl border text-xs font-semibold transition-all ${
+                    waiting === opt.val
+                      ? opt.val ? 'bg-red-50 border-red-300 text-red-600' : 'bg-green-50 border-green-300 text-green-700'
+                      : 'border-gray-200 text-gray-400 hover:border-gray-300'
+                  }`}>
+                  {opt.label}
+                </button>
+              ))}
+            </div>
+            {waiting && (
+              <textarea rows={2} value={waitReason} onChange={e => setWaitReason(e.target.value)}
+                placeholder="What do you need from Ravi? Decision, review, unblock…"
+                className="w-full border border-red-200 bg-red-50/40 rounded-xl px-3 py-2.5 text-sm resize-none focus:outline-none focus:border-red-400 placeholder-red-300 leading-relaxed" />
+            )}
+          </div>
         </div>
 
-        <div className="flex gap-2">
-          <button onClick={onClose} className="flex-1 py-2.5 border border-gray-200 text-gray-600 rounded-xl text-sm font-medium hover:bg-gray-50">Cancel</button>
-          <button onClick={() => onSave({ focus, waitingOnRavi: waiting, waitReason: waiting ? waitReason : '', focusUpdatedAt: new Date().toISOString() })}
-            className="flex-1 py-2.5 bg-blue-600 text-white rounded-xl text-sm font-medium hover:bg-blue-700">Save</button>
+        <div className="flex gap-2.5 px-5 pb-5">
+          <button onClick={onClose} className="flex-1 py-2.5 border border-gray-200 text-gray-600 rounded-xl text-sm font-semibold hover:bg-gray-50">Cancel</button>
+          <button
+            onClick={() => onSave({ focus, priorityLevel: level, waitingOnRavi: waiting, waitingReason: waiting ? waitReason : '', focusUpdatedAt: new Date().toISOString() })}
+            className="flex-1 py-2.5 bg-blue-600 text-white rounded-xl text-sm font-semibold hover:bg-blue-700">
+            Save Update
+          </button>
         </div>
       </div>
     </div>
@@ -258,6 +299,203 @@ function ManageMembersModal({ data, onSave, onClose }) {
         <button onClick={() => onSave(members)} className="w-full py-2.5 bg-blue-600 text-white rounded-xl text-sm font-medium hover:bg-blue-700">Save Changes</button>
       </div>
     </div>
+  );
+}
+
+/* ─── Admin priority table ─── */
+const AVATAR_COLORS_LIST = [
+  'from-blue-500 to-blue-700', 'from-violet-500 to-violet-700',
+  'from-emerald-500 to-emerald-700', 'from-orange-400 to-orange-600',
+  'from-pink-500 to-pink-700', 'from-cyan-500 to-cyan-700',
+  'from-rose-500 to-rose-700', 'from-indigo-500 to-indigo-700',
+  'from-teal-500 to-teal-700', 'from-amber-500 to-amber-600',
+  'from-fuchsia-500 to-fuchsia-700',
+];
+
+function AdminPriorityTable({ data, notSubmitted, onEdit, onSaveNotes, identity }) {
+  const [expandedNotes, setExpandedNotes] = useState(null); // member name with open notes
+  const [notesDraft, setNotesDraft] = useState({});
+
+  const members = data.members.filter(m => !ADMINS.includes(m));
+
+  const openNotes = (member) => {
+    setNotesDraft(d => ({ ...d, [member]: data.entries[member]?.raviNotes || '' }));
+    setExpandedNotes(expandedNotes === member ? null : member);
+  };
+
+  const saveNotes = (member) => {
+    onSaveNotes(member, notesDraft[member] || '');
+    setExpandedNotes(null);
+  };
+
+  return (
+    <>
+      {notSubmitted.length > 0 && (
+        <div className="flex items-start gap-2.5 bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 mb-4">
+          <AlertTriangle size={15} className="text-amber-500 mt-0.5 flex-shrink-0" />
+          <div>
+            <p className="text-xs font-semibold text-amber-700 mb-0.5">Pending submission ({notSubmitted.length})</p>
+            <p className="text-xs text-amber-600">{notSubmitted.join(', ')}</p>
+          </div>
+        </div>
+      )}
+
+      {/* Table */}
+      <div className="bg-white border border-gray-200 rounded-2xl overflow-hidden shadow-sm">
+        {/* Header row */}
+        <div className="hidden md:grid grid-cols-[32px_1fr_130px_1fr_120px] gap-4 items-center px-5 py-3 bg-gray-50 border-b border-gray-100">
+          <span />
+          <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Member</span>
+          <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Priority</span>
+          <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Focus / What they're working on</span>
+          <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider text-right">Actions</span>
+        </div>
+
+        <div className="divide-y divide-gray-100">
+          {members.map((member, idx) => {
+            const e = data.entries[member] || {};
+            const hasEntry = !!e.focus?.trim();
+            const pl = getPL(e.priorityLevel);
+            const color = AVATAR_COLORS_LIST[idx % AVATAR_COLORS_LIST.length];
+            const isNotesOpen = expandedNotes === member;
+
+            return (
+              <div key={member}>
+                {/* Main row */}
+                <div className={`grid grid-cols-[32px_1fr_auto] md:grid-cols-[32px_1fr_130px_1fr_120px] gap-3 md:gap-4 items-center px-4 md:px-5 py-4 transition-colors ${
+                  e.waitingOnRavi ? 'bg-red-50/30' : 'hover:bg-gray-50/60'
+                }`}>
+
+                  {/* Rank */}
+                  <span className="text-xs font-bold text-gray-300 text-center">#{idx + 1}</span>
+
+                  {/* Avatar + name */}
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <span className={`w-8 h-8 rounded-full bg-gradient-to-br ${color} text-white text-xs font-bold flex items-center justify-center flex-shrink-0 shadow-sm`}>
+                      {member[0]}
+                    </span>
+                    <div className="min-w-0">
+                      <p className="font-semibold text-sm text-gray-900 leading-tight truncate">{member}</p>
+                      <p className="text-xs text-gray-400 leading-tight">
+                        {e.focusUpdatedAt ? `Updated ${timeAgo(e.focusUpdatedAt)}` : 'No update yet'}
+                      </p>
+                    </div>
+                    {e.waitingOnRavi && (
+                      <span className="flex items-center gap-1 text-xs bg-red-50 text-red-500 border border-red-200 px-2 py-0.5 rounded-full font-semibold flex-shrink-0 md:hidden">
+                        <Bell size={10} />Waiting
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Priority badge — desktop */}
+                  <div className="hidden md:flex items-center">
+                    {hasEntry ? (
+                      <span className={`inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1.5 rounded-full ${pl.pill}`}>
+                        <span className={`w-2 h-2 rounded-full ${pl.color}`} />
+                        {pl.label}
+                      </span>
+                    ) : (
+                      <span className="text-xs text-gray-300 italic">—</span>
+                    )}
+                  </div>
+
+                  {/* Focus text — desktop */}
+                  <div className="hidden md:block min-w-0">
+                    {hasEntry ? (
+                      <div>
+                        <p className="text-sm text-gray-700 leading-relaxed line-clamp-2">{e.focus}</p>
+                        {e.waitingOnRavi && e.waitingReason && (
+                          <div className="mt-1.5 flex items-start gap-1.5">
+                            <Bell size={11} className="text-red-400 mt-0.5 flex-shrink-0" />
+                            <p className="text-xs text-red-500 leading-snug line-clamp-1">{e.waitingReason}</p>
+                          </div>
+                        )}
+                        {e.raviNotes && (
+                          <div className="mt-1.5 flex items-start gap-1.5">
+                            <MessageSquare size={11} className="text-indigo-400 mt-0.5 flex-shrink-0" />
+                            <p className="text-xs text-indigo-600 leading-snug line-clamp-1 font-medium">{e.raviNotes}</p>
+                          </div>
+                        )}
+                      </div>
+                    ) : (
+                      <p className="text-xs text-gray-300 italic">No update submitted</p>
+                    )}
+                  </div>
+
+                  {/* Actions */}
+                  <div className="flex items-center gap-1.5 justify-end">
+                    {e.waitingOnRavi && (
+                      <span className="hidden md:flex items-center gap-1 text-xs bg-red-50 text-red-500 border border-red-200 px-2 py-1 rounded-full font-semibold flex-shrink-0">
+                        <Bell size={10} />Needs Ravi
+                      </span>
+                    )}
+                    <button
+                      onClick={() => openNotes(member)}
+                      className={`flex items-center gap-1 text-xs px-2.5 py-1.5 rounded-lg border font-medium transition-all ${
+                        isNotesOpen || e.raviNotes
+                          ? 'bg-indigo-50 border-indigo-200 text-indigo-600'
+                          : 'border-gray-200 text-gray-400 hover:border-gray-300 hover:text-gray-600'
+                      }`}
+                      title="Add Ravi's notes"
+                    >
+                      <MessageSquare size={12} />
+                      <span className="hidden sm:inline">{e.raviNotes ? 'Notes' : 'Add note'}</span>
+                    </button>
+                    <button
+                      onClick={() => onEdit(member)}
+                      className="flex items-center gap-1 text-xs px-2.5 py-1.5 rounded-lg border border-gray-200 text-gray-400 hover:border-blue-300 hover:text-blue-600 font-medium transition-all"
+                      title="Edit their priority"
+                    >
+                      <Pencil size={12} />
+                      <span className="hidden sm:inline">Edit</span>
+                    </button>
+                  </div>
+                </div>
+
+                {/* Mobile: focus + priority */}
+                {hasEntry && (
+                  <div className="md:hidden px-4 pb-3 flex items-start gap-3">
+                    <span className="w-8 flex-shrink-0" />
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-1.5">
+                        <span className={`inline-flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded-full ${pl.pill}`}>
+                          <span className={`w-1.5 h-1.5 rounded-full ${pl.color}`} />
+                          {pl.label}
+                        </span>
+                      </div>
+                      <p className="text-sm text-gray-600 leading-relaxed">{e.focus}</p>
+                    </div>
+                  </div>
+                )}
+
+                {/* Ravi notes panel */}
+                {isNotesOpen && (
+                  <div className="px-4 md:px-5 pb-4 bg-indigo-50/40 border-t border-indigo-100">
+                    <div className="pt-3">
+                      <p className="text-xs font-semibold text-indigo-600 uppercase tracking-wide mb-2 flex items-center gap-1.5">
+                        <MessageSquare size={11} />Ravi's Notes on {member}
+                      </p>
+                      <textarea
+                        rows={3}
+                        value={notesDraft[member] ?? (e.raviNotes || '')}
+                        onChange={ev => setNotesDraft(d => ({ ...d, [member]: ev.target.value }))}
+                        autoFocus
+                        placeholder={`Add your thoughts, feedback, or direction for ${member}…`}
+                        className="w-full border border-indigo-200 bg-white rounded-xl px-3 py-2.5 text-sm resize-none focus:outline-none focus:border-indigo-400 leading-relaxed"
+                      />
+                      <div className="flex gap-2 mt-2">
+                        <button onClick={() => setExpandedNotes(null)} className="px-3 py-1.5 border border-gray-200 text-gray-500 rounded-lg text-xs font-medium hover:bg-white">Cancel</button>
+                        <button onClick={() => saveNotes(member)} className="px-3 py-1.5 bg-indigo-600 text-white rounded-lg text-xs font-semibold hover:bg-indigo-700">Save Note</button>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </>
   );
 }
 
@@ -421,91 +659,15 @@ export default function TeamHub({ defaultSection = 'priority' }) {
             </div>
           )}
 
-          {/* Admin grid view */}
+          {/* Admin table view */}
           {isAdmin && (
-            <>
-              {notSubmittedPriority.length > 0 && (
-                <div className="flex items-start gap-2.5 bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 mb-4">
-                  <AlertTriangle size={15} className="text-amber-500 mt-0.5 flex-shrink-0" />
-                  <div>
-                    <p className="text-xs font-semibold text-amber-700 mb-0.5">Pending submission ({notSubmittedPriority.length})</p>
-                    <p className="text-xs text-amber-600">{notSubmittedPriority.join(', ')}</p>
-                  </div>
-                </div>
-              )}
-
-              {/* Priority list */}
-              <div className="space-y-3">
-                {data.members.filter(m => !ADMINS.includes(m)).map((member, idx) => {
-                  const e = data.entries[member] || {};
-                  const hasEntry = !!e.focus?.trim();
-                  const AVATAR_COLORS = [
-                    'from-blue-500 to-blue-700',
-                    'from-violet-500 to-violet-700',
-                    'from-emerald-500 to-emerald-700',
-                    'from-orange-400 to-orange-600',
-                    'from-pink-500 to-pink-700',
-                    'from-cyan-500 to-cyan-700',
-                    'from-rose-500 to-rose-700',
-                    'from-indigo-500 to-indigo-700',
-                    'from-teal-500 to-teal-700',
-                    'from-amber-500 to-amber-600',
-                    'from-fuchsia-500 to-fuchsia-700',
-                  ];
-                  const color = AVATAR_COLORS[idx % AVATAR_COLORS.length];
-                  return (
-                    <div key={member}
-                      onClick={() => canEdit(member) && setEditPriority(member)}
-                      className={`bg-white border rounded-2xl p-4 shadow-sm transition-all cursor-pointer hover:shadow-md ${
-                        e.waitingOnRavi ? 'border-red-200 ring-1 ring-red-100' : 'border-gray-100'
-                      }`}>
-                      <div className="flex items-center gap-3 mb-3">
-                        {/* Rank number */}
-                        <span className="text-xs font-bold text-gray-300 w-4 text-center flex-shrink-0">#{idx + 1}</span>
-                        {/* Avatar */}
-                        <span className={`w-9 h-9 rounded-full bg-gradient-to-br ${color} text-white text-sm font-bold flex items-center justify-center flex-shrink-0 shadow-sm`}>
-                          {member[0]}
-                        </span>
-                        {/* Name + time */}
-                        <div className="flex-1 min-w-0">
-                          <p className="font-bold text-sm text-gray-900 leading-tight">{member}</p>
-                          {e.focusUpdatedAt
-                            ? <p className="text-xs text-gray-400 mt-0.5">Updated {timeAgo(e.focusUpdatedAt)}</p>
-                            : <p className="text-xs text-gray-300 mt-0.5">No update yet</p>}
-                        </div>
-                        {/* Badges */}
-                        <div className="flex items-center gap-1.5 flex-shrink-0">
-                          {e.waitingOnRavi && (
-                            <span className="flex items-center gap-1 text-xs bg-red-50 text-red-500 border border-red-200 px-2 py-1 rounded-full font-semibold">
-                              <Bell size={10} />Needs Ravi
-                            </span>
-                          )}
-                          {!hasEntry && (
-                            <span className="text-xs bg-amber-50 text-amber-500 border border-amber-200 px-2 py-1 rounded-full font-semibold">Pending</span>
-                          )}
-                        </div>
-                      </div>
-
-                      {hasEntry ? (
-                        <div className="ml-7 pl-3 border-l-2 border-gray-100">
-                          <p className="text-sm text-gray-700 leading-relaxed">{e.focus}</p>
-                          {e.waitingOnRavi && e.waitReason && (
-                            <div className="mt-2 flex items-start gap-2 bg-red-50 border border-red-100 rounded-xl px-3 py-2">
-                              <Bell size={12} className="text-red-400 mt-0.5 flex-shrink-0" />
-                              <p className="text-xs text-red-600 leading-relaxed">{e.waitReason}</p>
-                            </div>
-                          )}
-                        </div>
-                      ) : (
-                        <div className="ml-7 pl-3 border-l-2 border-dashed border-gray-100">
-                          <p className="text-xs text-gray-300 italic">Tap to add their priority update</p>
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-            </>
+            <AdminPriorityTable
+              data={data}
+              notSubmitted={notSubmittedPriority}
+              onEdit={setEditPriority}
+              onSaveNotes={(member, notes) => savePriority(member, { raviNotes: notes })}
+              identity={identity}
+            />
           )}
         </>
       )}
