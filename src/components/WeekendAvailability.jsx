@@ -9,6 +9,7 @@ import {
   ADMINS,
   getNextWeekend, fmtDate, fmtDay,
   getWeekendData, upsertMemberEntry, saveMembers,
+  getMemberPriorities, addMemberPriority, updateMemberPriority, deleteMemberPriority,
   getIdentity, saveIdentity,
 } from '../lib/teamStorage';
 import { getAccount, CLIENT_ID } from '../lib/auth';
@@ -147,47 +148,37 @@ function WeekendEditModal({ member, entry, onSave, onClose, isAdmin, allMembers 
 
 /* ─── Priority levels config ─── */
 const PRIORITY_LEVELS = [
-  { value: 'very_high', label: 'Very High', color: 'bg-red-500',    text: 'text-red-600',    bg: 'bg-red-50',    border: 'border-red-300',    pill: 'bg-red-100 text-red-700'    },
-  { value: 'high',      label: 'High',      color: 'bg-orange-400', text: 'text-orange-600', bg: 'bg-orange-50', border: 'border-orange-300',  pill: 'bg-orange-100 text-orange-700' },
-  { value: 'medium',    label: 'Medium',    color: 'bg-yellow-400', text: 'text-yellow-600', bg: 'bg-yellow-50', border: 'border-yellow-300',  pill: 'bg-yellow-100 text-yellow-700' },
-  { value: 'low',       label: 'Low',       color: 'bg-green-400',  text: 'text-green-600',  bg: 'bg-green-50',  border: 'border-green-300',   pill: 'bg-green-100 text-green-700'  },
+  { value: 'very_high', label: 'Very High', color: 'bg-red-500',    text: 'text-red-600',    bg: 'bg-red-50',    border: 'border-red-300',    pill: 'bg-red-100 text-red-700'       },
+  { value: 'high',      label: 'High',      color: 'bg-orange-400', text: 'text-orange-600', bg: 'bg-orange-50', border: 'border-orange-300',  pill: 'bg-orange-100 text-orange-700'  },
+  { value: 'medium',    label: 'Medium',    color: 'bg-yellow-400', text: 'text-yellow-600', bg: 'bg-yellow-50', border: 'border-yellow-300',  pill: 'bg-yellow-100 text-yellow-700'  },
+  { value: 'low',       label: 'Low',       color: 'bg-green-400',  text: 'text-green-600',  bg: 'bg-green-50',  border: 'border-green-300',   pill: 'bg-green-100 text-green-700'   },
 ];
 function getPL(val) { return PRIORITY_LEVELS.find(p => p.value === val) || PRIORITY_LEVELS[2]; }
 
-/* ─── Priority edit modal ─── */
-function PriorityEditModal({ member, entry, onSave, onClose }) {
-  const [focus, setFocus]           = useState(entry?.focus || '');
-  const [level, setLevel]           = useState(entry?.priorityLevel || 'medium');
-  const [waiting, setWaiting]       = useState(entry?.waitingOnRavi || false);
-  const [waitReason, setWaitReason] = useState(entry?.waitingReason || '');
+/* ─── Add / Edit single priority item modal ─── */
+function PriorityItemModal({ item, memberName, onSave, onClose }) {
+  const [title, setTitle] = useState(item?.title || '');
+  const [level, setLevel] = useState(item?.priority_level || 'medium');
+  const isEdit = !!item;
 
   return (
     <div className="fixed inset-0 z-50 bg-black/50 flex items-end sm:items-center justify-center p-0 sm:p-4" onClick={onClose}>
       <div className="bg-white rounded-t-2xl sm:rounded-2xl shadow-xl w-full sm:max-w-md" onClick={e => e.stopPropagation()}>
-
-        {/* Modal header */}
         <div className="flex items-center justify-between px-5 pt-5 pb-4 border-b border-gray-100">
-          <div className="flex items-center gap-2.5">
-            <span className="w-9 h-9 rounded-full bg-gradient-to-br from-blue-500 to-blue-700 text-white font-bold flex items-center justify-center text-sm flex-shrink-0">{member[0]}</span>
-            <div>
-              <p className="font-semibold text-gray-900 leading-tight">{member}</p>
-              <p className="text-xs text-gray-400 leading-tight">Update your priority</p>
-            </div>
+          <div>
+            <p className="font-semibold text-gray-900">{isEdit ? 'Edit Priority' : 'Add Priority'}</p>
+            <p className="text-xs text-gray-400">{memberName}</p>
           </div>
           <button onClick={onClose} className="text-gray-400 hover:text-gray-600 rounded-lg p-1 hover:bg-gray-100"><X size={18} /></button>
         </div>
-
-        <div className="px-5 py-4 space-y-5">
-          {/* Priority level */}
+        <div className="px-5 py-5 space-y-4">
           <div>
             <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2.5">Priority Level</p>
             <div className="grid grid-cols-4 gap-2">
               {PRIORITY_LEVELS.map(pl => (
                 <button key={pl.value} onClick={() => setLevel(pl.value)}
                   className={`flex flex-col items-center gap-1.5 py-2.5 rounded-xl border text-xs font-semibold transition-all ${
-                    level === pl.value
-                      ? `${pl.bg} ${pl.border} ${pl.text}`
-                      : 'border-gray-200 text-gray-400 hover:border-gray-300 hover:bg-gray-50'
+                    level === pl.value ? `${pl.bg} ${pl.border} ${pl.text}` : 'border-gray-200 text-gray-400 hover:border-gray-300 hover:bg-gray-50'
                   }`}>
                   <span className={`w-2.5 h-2.5 rounded-full ${level === pl.value ? pl.color : 'bg-gray-200'}`} />
                   {pl.label}
@@ -195,44 +186,18 @@ function PriorityEditModal({ member, entry, onSave, onClose }) {
               ))}
             </div>
           </div>
-
-          {/* Current focus */}
           <div>
             <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">What are you working on?</p>
-            <textarea rows={3} value={focus} onChange={e => setFocus(e.target.value)} autoFocus
-              placeholder="Describe your main focus this week — key tasks, deliverables, goals…"
+            <textarea rows={3} value={title} onChange={e => setTitle(e.target.value)} autoFocus
+              placeholder="Describe this priority item — task, deliverable, or goal…"
               className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm resize-none focus:outline-none focus:border-blue-400 leading-relaxed" />
           </div>
-
-          {/* Waiting on Ravi */}
-          <div>
-            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Blocked / Waiting on Ravi?</p>
-            <div className="flex gap-2 mb-2.5">
-              {[{ val: false, label: '✓  All good' }, { val: true, label: '⚠  Need input' }].map(opt => (
-                <button key={String(opt.val)} onClick={() => setWaiting(opt.val)}
-                  className={`flex-1 py-2.5 rounded-xl border text-xs font-semibold transition-all ${
-                    waiting === opt.val
-                      ? opt.val ? 'bg-red-50 border-red-300 text-red-600' : 'bg-green-50 border-green-300 text-green-700'
-                      : 'border-gray-200 text-gray-400 hover:border-gray-300'
-                  }`}>
-                  {opt.label}
-                </button>
-              ))}
-            </div>
-            {waiting && (
-              <textarea rows={2} value={waitReason} onChange={e => setWaitReason(e.target.value)}
-                placeholder="What do you need from Ravi? Decision, review, unblock…"
-                className="w-full border border-red-200 bg-red-50/40 rounded-xl px-3 py-2.5 text-sm resize-none focus:outline-none focus:border-red-400 placeholder-red-300 leading-relaxed" />
-            )}
-          </div>
         </div>
-
         <div className="flex gap-2.5 px-5 pb-5">
           <button onClick={onClose} className="flex-1 py-2.5 border border-gray-200 text-gray-600 rounded-xl text-sm font-semibold hover:bg-gray-50">Cancel</button>
-          <button
-            onClick={() => onSave({ focus, priorityLevel: level, waitingOnRavi: waiting, waitingReason: waiting ? waitReason : '', focusUpdatedAt: new Date().toISOString() })}
-            className="flex-1 py-2.5 bg-blue-600 text-white rounded-xl text-sm font-semibold hover:bg-blue-700">
-            Save Update
+          <button disabled={!title.trim()} onClick={() => onSave({ title, priorityLevel: level })}
+            className="flex-1 py-2.5 bg-blue-600 text-white rounded-xl text-sm font-semibold hover:bg-blue-700 disabled:opacity-40">
+            {isEdit ? 'Save Changes' : 'Add Priority'}
           </button>
         </div>
       </div>
@@ -302,7 +267,7 @@ function ManageMembersModal({ data, onSave, onClose }) {
   );
 }
 
-/* ─── Admin priority table ─── */
+/* ─── Admin priority table (multi-item) ─── */
 const AVATAR_COLORS_LIST = [
   'from-blue-500 to-blue-700', 'from-violet-500 to-violet-700',
   'from-emerald-500 to-emerald-700', 'from-orange-400 to-orange-600',
@@ -312,8 +277,8 @@ const AVATAR_COLORS_LIST = [
   'from-fuchsia-500 to-fuchsia-700',
 ];
 
-function AdminPriorityTable({ data, notSubmitted, onEdit, onSaveNotes, identity }) {
-  const [expandedNotes, setExpandedNotes] = useState(null); // member name with open notes
+function AdminPriorityTable({ data, priorityItems, notSubmitted, onAddItem, onEditItem, onDeleteItem, onSaveNotes }) {
+  const [expandedNotes, setExpandedNotes] = useState(null);
   const [notesDraft, setNotesDraft] = useState({});
 
   const members = data.members.filter(m => !ADMINS.includes(m));
@@ -334,166 +299,114 @@ function AdminPriorityTable({ data, notSubmitted, onEdit, onSaveNotes, identity 
         <div className="flex items-start gap-2.5 bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 mb-4">
           <AlertTriangle size={15} className="text-amber-500 mt-0.5 flex-shrink-0" />
           <div>
-            <p className="text-xs font-semibold text-amber-700 mb-0.5">Pending submission ({notSubmitted.length})</p>
+            <p className="text-xs font-semibold text-amber-700 mb-0.5">No priorities submitted ({notSubmitted.length})</p>
             <p className="text-xs text-amber-600">{notSubmitted.join(', ')}</p>
           </div>
         </div>
       )}
 
-      {/* Table */}
-      <div className="bg-white border border-gray-200 rounded-2xl overflow-hidden shadow-sm">
-        {/* Header row */}
-        <div className="hidden md:grid grid-cols-[32px_1fr_130px_1fr_120px] gap-4 items-center px-5 py-3 bg-gray-50 border-b border-gray-100">
-          <span />
-          <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Member</span>
-          <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Priority</span>
-          <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Focus / What they're working on</span>
-          <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider text-right">Actions</span>
-        </div>
+      <div className="space-y-3">
+        {members.map((member, idx) => {
+          const e = data.entries[member] || {};
+          const items = priorityItems.filter(p => p.member_name === member);
+          const color = AVATAR_COLORS_LIST[idx % AVATAR_COLORS_LIST.length];
+          const isNotesOpen = expandedNotes === member;
 
-        <div className="divide-y divide-gray-100">
-          {members.map((member, idx) => {
-            const e = data.entries[member] || {};
-            const hasEntry = !!e.focus?.trim();
-            const pl = getPL(e.priorityLevel);
-            const color = AVATAR_COLORS_LIST[idx % AVATAR_COLORS_LIST.length];
-            const isNotesOpen = expandedNotes === member;
+          return (
+            <div key={member} className="bg-white border border-gray-200 rounded-2xl overflow-hidden shadow-sm">
+              {/* Member header */}
+              <div className="flex items-center gap-3 px-4 py-3 bg-gray-50 border-b border-gray-100">
+                <span className={`w-8 h-8 rounded-full bg-gradient-to-br ${color} text-white text-xs font-bold flex items-center justify-center flex-shrink-0 shadow-sm`}>
+                  {member[0]}
+                </span>
+                <div className="flex-1 min-w-0">
+                  <p className="font-semibold text-sm text-gray-900 leading-tight">{member}</p>
+                  <p className="text-xs text-gray-400">{items.length} priorit{items.length === 1 ? 'y' : 'ies'}</p>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <button
+                    onClick={() => openNotes(member)}
+                    className={`flex items-center gap-1 text-xs px-2.5 py-1.5 rounded-lg border font-medium transition-all ${
+                      isNotesOpen || e.raviNotes
+                        ? 'bg-indigo-50 border-indigo-200 text-indigo-600'
+                        : 'border-gray-200 text-gray-400 hover:border-gray-300 hover:text-gray-600'
+                    }`}
+                  >
+                    <MessageSquare size={12} />
+                    <span className="hidden sm:inline">{e.raviNotes ? 'Notes' : 'Add note'}</span>
+                  </button>
+                  <button
+                    onClick={() => onAddItem(member)}
+                    className="flex items-center gap-1 text-xs px-2.5 py-1.5 rounded-lg border border-blue-200 text-blue-600 bg-blue-50 font-medium hover:bg-blue-100 transition-all"
+                  >
+                    <Plus size={12} />
+                    <span className="hidden sm:inline">Add</span>
+                  </button>
+                </div>
+              </div>
 
-            return (
-              <div key={member}>
-                {/* Main row */}
-                <div className={`grid grid-cols-[32px_1fr_auto] md:grid-cols-[32px_1fr_130px_1fr_120px] gap-3 md:gap-4 items-center px-4 md:px-5 py-4 transition-colors ${
-                  e.waitingOnRavi ? 'bg-red-50/30' : 'hover:bg-gray-50/60'
-                }`}>
+              {/* Ravi notes */}
+              {e.raviNotes && !isNotesOpen && (
+                <div className="px-4 py-2 bg-indigo-50/50 border-b border-indigo-100 flex items-start gap-2">
+                  <MessageSquare size={12} className="text-indigo-400 mt-0.5 flex-shrink-0" />
+                  <p className="text-xs text-indigo-600 font-medium leading-relaxed">{e.raviNotes}</p>
+                </div>
+              )}
 
-                  {/* Rank */}
-                  <span className="text-xs font-bold text-gray-300 text-center">#{idx + 1}</span>
-
-                  {/* Avatar + name */}
-                  <div className="flex items-center gap-2.5 min-w-0">
-                    <span className={`w-8 h-8 rounded-full bg-gradient-to-br ${color} text-white text-xs font-bold flex items-center justify-center flex-shrink-0 shadow-sm`}>
-                      {member[0]}
-                    </span>
-                    <div className="min-w-0">
-                      <p className="font-semibold text-sm text-gray-900 leading-tight truncate">{member}</p>
-                      <p className="text-xs text-gray-400 leading-tight">
-                        {e.focusUpdatedAt ? `Updated ${timeAgo(e.focusUpdatedAt)}` : 'No update yet'}
-                      </p>
-                    </div>
-                    {e.waitingOnRavi && (
-                      <span className="flex items-center gap-1 text-xs bg-red-50 text-red-500 border border-red-200 px-2 py-0.5 rounded-full font-semibold flex-shrink-0 md:hidden">
-                        <Bell size={10} />Waiting
-                      </span>
-                    )}
-                  </div>
-
-                  {/* Priority badge — desktop */}
-                  <div className="hidden md:flex items-center">
-                    {hasEntry ? (
-                      <span className={`inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1.5 rounded-full ${pl.pill}`}>
-                        <span className={`w-2 h-2 rounded-full ${pl.color}`} />
-                        {pl.label}
-                      </span>
-                    ) : (
-                      <span className="text-xs text-gray-300 italic">—</span>
-                    )}
-                  </div>
-
-                  {/* Focus text — desktop */}
-                  <div className="hidden md:block min-w-0">
-                    {hasEntry ? (
-                      <div>
-                        <p className="text-sm text-gray-700 leading-relaxed line-clamp-2">{e.focus}</p>
-                        {e.waitingOnRavi && e.waitingReason && (
-                          <div className="mt-1.5 flex items-start gap-1.5">
-                            <Bell size={11} className="text-red-400 mt-0.5 flex-shrink-0" />
-                            <p className="text-xs text-red-500 leading-snug line-clamp-1">{e.waitingReason}</p>
-                          </div>
-                        )}
-                        {e.raviNotes && (
-                          <div className="mt-1.5 flex items-start gap-1.5">
-                            <MessageSquare size={11} className="text-indigo-400 mt-0.5 flex-shrink-0" />
-                            <p className="text-xs text-indigo-600 leading-snug line-clamp-1 font-medium">{e.raviNotes}</p>
-                          </div>
-                        )}
-                      </div>
-                    ) : (
-                      <p className="text-xs text-gray-300 italic">No update submitted</p>
-                    )}
-                  </div>
-
-                  {/* Actions */}
-                  <div className="flex items-center gap-1.5 justify-end">
-                    {e.waitingOnRavi && (
-                      <span className="hidden md:flex items-center gap-1 text-xs bg-red-50 text-red-500 border border-red-200 px-2 py-1 rounded-full font-semibold flex-shrink-0">
-                        <Bell size={10} />Needs Ravi
-                      </span>
-                    )}
-                    <button
-                      onClick={() => openNotes(member)}
-                      className={`flex items-center gap-1 text-xs px-2.5 py-1.5 rounded-lg border font-medium transition-all ${
-                        isNotesOpen || e.raviNotes
-                          ? 'bg-indigo-50 border-indigo-200 text-indigo-600'
-                          : 'border-gray-200 text-gray-400 hover:border-gray-300 hover:text-gray-600'
-                      }`}
-                      title="Add Ravi's notes"
-                    >
-                      <MessageSquare size={12} />
-                      <span className="hidden sm:inline">{e.raviNotes ? 'Notes' : 'Add note'}</span>
-                    </button>
-                    <button
-                      onClick={() => onEdit(member)}
-                      className="flex items-center gap-1 text-xs px-2.5 py-1.5 rounded-lg border border-gray-200 text-gray-400 hover:border-blue-300 hover:text-blue-600 font-medium transition-all"
-                      title="Edit their priority"
-                    >
-                      <Pencil size={12} />
-                      <span className="hidden sm:inline">Edit</span>
-                    </button>
+              {/* Ravi notes editor */}
+              {isNotesOpen && (
+                <div className="px-4 py-3 bg-indigo-50/40 border-b border-indigo-100">
+                  <p className="text-xs font-semibold text-indigo-600 uppercase tracking-wide mb-2 flex items-center gap-1.5">
+                    <MessageSquare size={11} />Ravi's Notes
+                  </p>
+                  <textarea
+                    rows={2}
+                    value={notesDraft[member] ?? (e.raviNotes || '')}
+                    onChange={ev => setNotesDraft(d => ({ ...d, [member]: ev.target.value }))}
+                    autoFocus
+                    placeholder={`Thoughts, feedback, or direction for ${member}…`}
+                    className="w-full border border-indigo-200 bg-white rounded-xl px-3 py-2 text-sm resize-none focus:outline-none focus:border-indigo-400"
+                  />
+                  <div className="flex gap-2 mt-2">
+                    <button onClick={() => setExpandedNotes(null)} className="px-3 py-1.5 border border-gray-200 text-gray-500 rounded-lg text-xs font-medium hover:bg-white">Cancel</button>
+                    <button onClick={() => saveNotes(member)} className="px-3 py-1.5 bg-indigo-600 text-white rounded-lg text-xs font-semibold hover:bg-indigo-700">Save Note</button>
                   </div>
                 </div>
+              )}
 
-                {/* Mobile: focus + priority */}
-                {hasEntry && (
-                  <div className="md:hidden px-4 pb-3 flex items-start gap-3">
-                    <span className="w-8 flex-shrink-0" />
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-1.5">
-                        <span className={`inline-flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded-full ${pl.pill}`}>
+              {/* Priority items */}
+              {items.length === 0 ? (
+                <div className="px-4 py-4 text-center">
+                  <p className="text-xs text-gray-300 italic">No priorities submitted yet</p>
+                </div>
+              ) : (
+                <div className="divide-y divide-gray-50">
+                  {items.map((item, i) => {
+                    const pl = getPL(item.priority_level);
+                    return (
+                      <div key={item.id} className="flex items-center gap-3 px-4 py-3 hover:bg-gray-50/60 transition-colors">
+                        <span className="text-xs font-bold text-gray-300 w-4 text-center flex-shrink-0">{i + 1}</span>
+                        <span className={`inline-flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded-full flex-shrink-0 ${pl.pill}`}>
                           <span className={`w-1.5 h-1.5 rounded-full ${pl.color}`} />
                           {pl.label}
                         </span>
+                        <p className="flex-1 text-sm text-gray-700 leading-snug min-w-0">{item.title}</p>
+                        <div className="flex items-center gap-1 flex-shrink-0">
+                          <button onClick={() => onEditItem(item, member)} className="p-1.5 text-gray-300 hover:text-blue-500 transition-colors rounded-lg hover:bg-blue-50">
+                            <Pencil size={13} />
+                          </button>
+                          <button onClick={() => onDeleteItem(item.id)} className="p-1.5 text-gray-300 hover:text-red-500 transition-colors rounded-lg hover:bg-red-50">
+                            <Trash2 size={13} />
+                          </button>
+                        </div>
                       </div>
-                      <p className="text-sm text-gray-600 leading-relaxed">{e.focus}</p>
-                    </div>
-                  </div>
-                )}
-
-                {/* Ravi notes panel */}
-                {isNotesOpen && (
-                  <div className="px-4 md:px-5 pb-4 bg-indigo-50/40 border-t border-indigo-100">
-                    <div className="pt-3">
-                      <p className="text-xs font-semibold text-indigo-600 uppercase tracking-wide mb-2 flex items-center gap-1.5">
-                        <MessageSquare size={11} />Ravi's Notes on {member}
-                      </p>
-                      <textarea
-                        rows={3}
-                        value={notesDraft[member] ?? (e.raviNotes || '')}
-                        onChange={ev => setNotesDraft(d => ({ ...d, [member]: ev.target.value }))}
-                        autoFocus
-                        placeholder={`Add your thoughts, feedback, or direction for ${member}…`}
-                        className="w-full border border-indigo-200 bg-white rounded-xl px-3 py-2.5 text-sm resize-none focus:outline-none focus:border-indigo-400 leading-relaxed"
-                      />
-                      <div className="flex gap-2 mt-2">
-                        <button onClick={() => setExpandedNotes(null)} className="px-3 py-1.5 border border-gray-200 text-gray-500 rounded-lg text-xs font-medium hover:bg-white">Cancel</button>
-                        <button onClick={() => saveNotes(member)} className="px-3 py-1.5 bg-indigo-600 text-white rounded-lg text-xs font-semibold hover:bg-indigo-700">Save Note</button>
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </div>
-            );
-          })}
-        </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          );
+        })}
       </div>
     </>
   );
@@ -511,20 +424,26 @@ export default function TeamHub({ defaultSection = 'priority' }) {
 
   const [identity, setIdentity] = useState(resolveIdentity);
   const [activeTab, setActiveTab] = useState(defaultSection);
-  const [showIdModal, setShowIdModal]     = useState(false);
-  const [editWeekend, setEditWeekend]     = useState(null);
-  const [editPriority, setEditPriority]   = useState(null);
-  const [showManage, setShowManage]       = useState(false);
+  const [showIdModal, setShowIdModal]   = useState(false);
+  const [editWeekend, setEditWeekend]   = useState(null);
+  const [priorityModal, setPriorityModal] = useState(null); // { item: null|object, memberName: string }
+  const [showManage, setShowManage]     = useState(false);
 
   const authEnabled = CLIENT_ID && CLIENT_ID !== 'YOUR_CLIENT_ID';
   const { sat, sun } = getNextWeekend();
   const isAdmin = ADMINS.includes(identity);
+
+  const { data: priorityItems = [] } = useQuery({
+    queryKey: ['memberPriorities'],
+    queryFn: getMemberPriorities,
+  });
 
   useEffect(() => {
     if (!identity && !authEnabled) setShowIdModal(true);
   }, [identity, authEnabled]);
 
   const invalidate = () => qc.invalidateQueries({ queryKey: ['teamHub'] });
+  const invalidatePriorities = () => qc.invalidateQueries({ queryKey: ['memberPriorities'] });
 
   const saveWeekend = async (entry, nameOverride) => {
     const target = nameOverride || editWeekend;
@@ -534,10 +453,21 @@ export default function TeamHub({ defaultSection = 'priority' }) {
     setEditWeekend(null);
   };
 
-  const savePriority = async (member, entry) => {
-    await upsertMemberEntry(member, entry);
-    invalidate();
-    setEditPriority(null);
+  const handlePrioritySave = async ({ title, priorityLevel }) => {
+    if (!priorityModal) return;
+    const { item, memberName } = priorityModal;
+    if (item) {
+      await updateMemberPriority(item.id, { title, priorityLevel });
+    } else {
+      await addMemberPriority(memberName, title, priorityLevel);
+    }
+    invalidatePriorities();
+    setPriorityModal(null);
+  };
+
+  const handlePriorityDelete = async (id) => {
+    await deleteMemberPriority(id);
+    invalidatePriorities();
   };
 
   const handleManageSave = async (members) => {
@@ -550,14 +480,14 @@ export default function TeamHub({ defaultSection = 'priority' }) {
 
   const waitingOnRavi = data.members.filter(m => data.entries[m]?.waitingOnRavi);
   const notSubmittedWeekend = data.members.filter(m => { const e = data.entries[m]; return !e || (!e.sat || e.sat === 'none'); });
-  const notSubmittedPriority = data.members.filter(m => !data.entries[m]?.focus?.trim());
+  const notSubmittedPriority = data.members.filter(m => !ADMINS.includes(m) && priorityItems.filter(p => p.member_name === m).length === 0);
 
   return (
     <div>
       {/* Modals */}
       {showIdModal && <IdentityModal members={data.members} onSelect={name => { setIdentity(name); setShowIdModal(false); }} />}
       {editWeekend && <WeekendEditModal member={editWeekend} entry={data.entries[editWeekend]} onSave={saveWeekend} onClose={() => setEditWeekend(null)} isAdmin={isAdmin} allMembers={data.members.filter(m => !ADMINS.includes(m))} />}
-      {editPriority && <PriorityEditModal member={editPriority} entry={data.entries[editPriority]} onSave={e => savePriority(editPriority, e)} onClose={() => setEditPriority(null)} />}
+      {priorityModal && <PriorityItemModal item={priorityModal.item} memberName={priorityModal.memberName} onSave={handlePrioritySave} onClose={() => setPriorityModal(null)} />}
       {showManage && <ManageMembersModal data={data} onSave={handleManageSave} onClose={() => setShowManage(false)} />}
 
       {/* ── Header ── */}
@@ -630,43 +560,83 @@ export default function TeamHub({ defaultSection = 'priority' }) {
       {/* ══ MY PRIORITY TAB ══ */}
       {activeTab === 'priority' && (
         <>
-          {/* Member's own form — compact card at top */}
-          {identity && !isAdmin && (
-            <div className="bg-white border border-gray-200 rounded-2xl p-4 shadow-sm mb-4">
-              <div className="flex items-center justify-between mb-3">
-                <p className="text-sm font-semibold text-gray-700">Your Current Focus</p>
-                <button onClick={() => setEditPriority(identity)} className="flex items-center gap-1 text-xs text-blue-500 font-medium hover:underline">
-                  <Pencil size={12} />Edit
-                </button>
-              </div>
-              {data.entries[identity]?.focus ? (
-                <div>
-                  <p className="text-sm text-gray-700 mb-2">{data.entries[identity].focus}</p>
-                  {data.entries[identity]?.waitingOnRavi && (
-                    <div className="flex items-start gap-2 bg-red-50 border border-red-100 rounded-xl px-3 py-2">
-                      <Bell size={13} className="text-red-500 mt-0.5 flex-shrink-0" />
-                      <p className="text-xs text-red-600">{data.entries[identity].waitReason || 'Waiting on Ravi'}</p>
-                    </div>
-                  )}
-                  <p className="text-xs text-gray-400 mt-2">Updated {timeAgo(data.entries[identity]?.focusUpdatedAt)}</p>
+          {/* Member's own view */}
+          {identity && !isAdmin && (() => {
+            const myItems = priorityItems.filter(p => p.member_name === identity);
+            return (
+              <div className="bg-white border border-gray-200 rounded-2xl overflow-hidden shadow-sm mb-4">
+                <div className="flex items-center justify-between px-4 py-3 bg-gray-50 border-b border-gray-100">
+                  <div>
+                    <p className="text-sm font-semibold text-gray-900">Your Priorities</p>
+                    <p className="text-xs text-gray-400">{myItems.length} item{myItems.length !== 1 ? 's' : ''} · visible to Ravi</p>
+                  </div>
+                  <button
+                    onClick={() => setPriorityModal({ item: null, memberName: identity })}
+                    className="flex items-center gap-1.5 text-xs bg-blue-600 text-white px-3 py-1.5 rounded-lg font-semibold hover:bg-blue-700 transition-colors"
+                  >
+                    <Plus size={13} />Add Priority
+                  </button>
                 </div>
-              ) : (
-                <button onClick={() => setEditPriority(identity)}
-                  className="w-full flex items-center justify-center gap-2 border-2 border-dashed border-blue-200 text-blue-400 rounded-xl py-3 text-sm hover:bg-blue-50 transition-colors">
-                  <Zap size={15} />Tell Ravi what you're working on
-                </button>
-              )}
-            </div>
-          )}
+
+                {myItems.length === 0 ? (
+                  <button
+                    onClick={() => setPriorityModal({ item: null, memberName: identity })}
+                    className="w-full flex flex-col items-center justify-center gap-2 border-2 border-dashed border-blue-200 text-blue-400 rounded-xl py-8 text-sm hover:bg-blue-50 transition-colors m-4 w-[calc(100%-2rem)]"
+                  >
+                    <Zap size={20} className="opacity-60" />
+                    <span className="font-medium">Tell Ravi what you're working on</span>
+                    <span className="text-xs text-gray-400">Add your current priorities and goals</span>
+                  </button>
+                ) : (
+                  <div className="divide-y divide-gray-50">
+                    {myItems.map((item, i) => {
+                      const pl = getPL(item.priority_level);
+                      return (
+                        <div key={item.id} className="flex items-center gap-3 px-4 py-3 hover:bg-gray-50/60 transition-colors">
+                          <span className="text-xs font-bold text-gray-300 w-4 text-center flex-shrink-0">{i + 1}</span>
+                          <span className={`inline-flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded-full flex-shrink-0 ${pl.pill}`}>
+                            <span className={`w-1.5 h-1.5 rounded-full ${pl.color}`} />
+                            {pl.label}
+                          </span>
+                          <p className="flex-1 text-sm text-gray-700 leading-snug min-w-0">{item.title}</p>
+                          <div className="flex items-center gap-1 flex-shrink-0">
+                            <button onClick={() => setPriorityModal({ item, memberName: identity })} className="p-1.5 text-gray-300 hover:text-blue-500 transition-colors rounded-lg hover:bg-blue-50">
+                              <Pencil size={13} />
+                            </button>
+                            <button onClick={() => handlePriorityDelete(item.id)} className="p-1.5 text-gray-300 hover:text-red-500 transition-colors rounded-lg hover:bg-red-50">
+                              <Trash2 size={13} />
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+
+                {/* Ravi's notes to this member */}
+                {data.entries[identity]?.raviNotes && (
+                  <div className="px-4 py-3 border-t border-indigo-100 bg-indigo-50/40 flex items-start gap-2">
+                    <MessageSquare size={13} className="text-indigo-400 mt-0.5 flex-shrink-0" />
+                    <div>
+                      <p className="text-xs font-semibold text-indigo-600 mb-0.5">Note from Ravi</p>
+                      <p className="text-sm text-indigo-700">{data.entries[identity].raviNotes}</p>
+                    </div>
+                  </div>
+                )}
+              </div>
+            );
+          })()}
 
           {/* Admin table view */}
           {isAdmin && (
             <AdminPriorityTable
               data={data}
+              priorityItems={priorityItems}
               notSubmitted={notSubmittedPriority}
-              onEdit={setEditPriority}
-              onSaveNotes={(member, notes) => savePriority(member, { raviNotes: notes })}
-              identity={identity}
+              onAddItem={(memberName) => setPriorityModal({ item: null, memberName })}
+              onEditItem={(item, memberName) => setPriorityModal({ item, memberName })}
+              onDeleteItem={handlePriorityDelete}
+              onSaveNotes={(member, notes) => { upsertMemberEntry(member, { raviNotes: notes }); invalidate(); }}
             />
           )}
         </>

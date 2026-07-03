@@ -113,6 +113,39 @@ export async function saveMembers(memberNames) {
   if (error) throw error;
 }
 
+// ── Member priorities (multiple items per member) ─────────────────────────────
+
+export async function getMemberPriorities() {
+  const { data, error } = await supabase
+    .from('member_priorities')
+    .select('*')
+    .order('created_at', { ascending: true });
+  if (error) throw error;
+  return data || [];
+}
+
+export async function addMemberPriority(memberName, title, priorityLevel) {
+  const { error } = await supabase.from('member_priorities').insert({
+    member_name:    memberName,
+    title:          title.trim(),
+    priority_level: priorityLevel || 'medium',
+  });
+  if (error) throw error;
+}
+
+export async function updateMemberPriority(id, { title, priorityLevel }) {
+  const row = {};
+  if (title         !== undefined) row.title          = title.trim();
+  if (priorityLevel !== undefined) row.priority_level = priorityLevel;
+  const { error } = await supabase.from('member_priorities').update(row).eq('id', id);
+  if (error) throw error;
+}
+
+export async function deleteMemberPriority(id) {
+  const { error } = await supabase.from('member_priorities').delete().eq('id', id);
+  if (error) throw error;
+}
+
 // Identity stored locally (not synced — it's the user's own device preference)
 const IDENTITY_KEY = 'ceo_team_identity';
 export function getIdentity() { return localStorage.getItem(IDENTITY_KEY) || null; }
