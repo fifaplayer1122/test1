@@ -57,7 +57,6 @@ function StatusBadge({ status }) {
 }
 
 const STATUS_OPTIONS = [
-  { value: 'none',        label: 'Waiting for Reply' },
   { value: 'available',   label: 'Available'          },
   { value: 'partial',     label: 'Partial / Limited'  },
   { value: 'unavailable', label: 'Unavailable'        },
@@ -66,11 +65,17 @@ const STATUS_OPTIONS = [
 /* ─── Weekend edit modal ─── */
 function WeekendEditModal({ member, entry, onSave, onClose, isAdmin, allMembers }) {
   const [name, setName]       = useState(member || '');
-  const [sat, setSat]         = useState(entry?.sat || 'none');
-  const [sun, setSun]         = useState(entry?.sun || 'none');
+  const [sat, setSat]         = useState(entry?.sat && entry.sat !== 'none' ? entry.sat : 'available');
+  const [sun, setSun]         = useState(entry?.sun && entry.sun !== 'none' ? entry.sun : 'available');
   const [satTime, setSatTime] = useState(entry?.satTime || '');
   const [sunTime, setSunTime] = useState(entry?.sunTime || '');
   const [topics, setTopics]   = useState(entry?.topics || '');
+
+  const needsSatTime = sat === 'available' || sat === 'partial';
+  const needsSunTime = sun === 'available' || sun === 'partial';
+  const satTimeOk    = !needsSatTime || satTime.trim();
+  const sunTimeOk    = !needsSunTime || sunTime.trim();
+  const canSave      = satTimeOk && sunTimeOk && (!isAdmin || name);
 
   const inputCls = "w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-500 bg-white";
   const labelCls = "block text-sm font-medium text-gray-700 mb-1.5";
@@ -80,56 +85,74 @@ function WeekendEditModal({ member, entry, onSave, onClose, isAdmin, allMembers 
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md" onClick={e => e.stopPropagation()}>
         {/* Header */}
         <div className="flex items-center justify-between px-6 pt-5 pb-4 border-b border-gray-100">
-          <h2 className="text-base font-semibold text-gray-900">Add Availability</h2>
+          <h2 className="text-base font-semibold text-gray-900">Weekend Availability</h2>
           <button onClick={onClose} className="text-gray-400 hover:text-gray-600 rounded-lg p-1 hover:bg-gray-100"><X size={18} /></button>
         </div>
 
         <div className="px-6 py-5 space-y-4">
           {/* Name */}
-          <div>
-            <label className={labelCls}>Name</label>
-            {isAdmin ? (
+          {isAdmin && (
+            <div>
+              <label className={labelCls}>Name</label>
               <select value={name} onChange={e => setName(e.target.value)} className={inputCls}>
                 <option value="">Select employee…</option>
                 {allMembers.map(m => <option key={m} value={m}>{m}</option>)}
               </select>
-            ) : (
-              <input value={name} readOnly className={`${inputCls} bg-gray-50 text-gray-500`} placeholder="Employee name" />
-            )}
-          </div>
+            </div>
+          )}
 
           {/* Status row */}
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className={labelCls}>Saturday Status</label>
-              <select value={sat} onChange={e => setSat(e.target.value)} className={inputCls}>
+              <label className={labelCls}>Saturday</label>
+              <select value={sat} onChange={e => { setSat(e.target.value); setSatTime(''); }} className={inputCls}>
                 {STATUS_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
               </select>
             </div>
             <div>
-              <label className={labelCls}>Sunday Status</label>
-              <select value={sun} onChange={e => setSun(e.target.value)} className={inputCls}>
+              <label className={labelCls}>Sunday</label>
+              <select value={sun} onChange={e => { setSun(e.target.value); setSunTime(''); }} className={inputCls}>
                 {STATUS_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
               </select>
             </div>
           </div>
 
-          {/* Time/Details row */}
+          {/* Time/Details row — mandatory when available or partial */}
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className={labelCls}>Saturday Time/Details</label>
-              <input value={satTime} onChange={e => setSatTime(e.target.value)} placeholder="e.g. 10:30 AM onwards" className={inputCls} />
+              <label className={labelCls}>
+                Saturday Time
+                {needsSatTime && <span className="text-red-500 ml-1">*</span>}
+              </label>
+              <input
+                value={satTime}
+                onChange={e => setSatTime(e.target.value)}
+                placeholder={needsSatTime ? 'Required — e.g. 10 AM–1 PM' : 'e.g. 10 AM–1 PM'}
+                disabled={sat === 'unavailable'}
+                className={`${inputCls} ${!satTimeOk ? 'border-red-300 focus:border-red-400' : ''} ${sat === 'unavailable' ? 'bg-gray-50 text-gray-400' : ''}`}
+              />
+              {!satTimeOk && <p className="text-xs text-red-500 mt-1">Please enter your Saturday availability time</p>}
             </div>
             <div>
-              <label className={labelCls}>Sunday Time/Details</label>
-              <input value={sunTime} onChange={e => setSunTime(e.target.value)} placeholder="e.g. 9 AM to 12 PM" className={inputCls} />
+              <label className={labelCls}>
+                Sunday Time
+                {needsSunTime && <span className="text-red-500 ml-1">*</span>}
+              </label>
+              <input
+                value={sunTime}
+                onChange={e => setSunTime(e.target.value)}
+                placeholder={needsSunTime ? 'Required — e.g. 9 AM–12 PM' : 'e.g. 9 AM–12 PM'}
+                disabled={sun === 'unavailable'}
+                className={`${inputCls} ${!sunTimeOk ? 'border-red-300 focus:border-red-400' : ''} ${sun === 'unavailable' ? 'bg-gray-50 text-gray-400' : ''}`}
+              />
+              {!sunTimeOk && <p className="text-xs text-red-500 mt-1">Please enter your Sunday availability time</p>}
             </div>
           </div>
 
           {/* Topics */}
           <div>
             <label className={labelCls}>Topics / Notes</label>
-            <textarea rows={3} value={topics} onChange={e => setTopics(e.target.value)}
+            <textarea rows={2} value={topics} onChange={e => setTopics(e.target.value)}
               placeholder="Any topics or agenda items…"
               className={`${inputCls} resize-none`} />
           </div>
@@ -138,8 +161,12 @@ function WeekendEditModal({ member, entry, onSave, onClose, isAdmin, allMembers 
         {/* Footer */}
         <div className="flex items-center justify-end gap-3 px-6 pb-5">
           <button onClick={onClose} className="px-5 py-2 border border-gray-300 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-50">Cancel</button>
-          <button onClick={() => onSave({ sat, sun, satTime, sunTime, topics }, isAdmin ? name : member)}
-            className="px-5 py-2 bg-gray-900 text-white rounded-lg text-sm font-medium hover:bg-gray-800">Add</button>
+          <button
+            disabled={!canSave}
+            onClick={() => canSave && onSave({ sat, sun, satTime, sunTime, topics }, isAdmin ? name : member)}
+            className="px-5 py-2 bg-gray-900 text-white rounded-lg text-sm font-medium hover:bg-gray-800 disabled:opacity-40 disabled:cursor-not-allowed">
+            Save
+          </button>
         </div>
       </div>
     </div>
