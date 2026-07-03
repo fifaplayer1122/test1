@@ -44,7 +44,6 @@ export async function getTasks() {
   if (error) throw error;
 
   if (data.length === 0) {
-    // Try localStorage migration first, otherwise seed with defaults
     const local = localStorage.getItem('ceo_tasks');
     const seed = local
       ? JSON.parse(local)
