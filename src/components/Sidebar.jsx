@@ -1,8 +1,9 @@
 import {
   LayoutDashboard, CheckSquare, CheckCircle, SkipForward,
-  Image, Users, CalendarDays, MessageSquare, LogOut, Zap,
+  Image, Users, CalendarDays, MessageSquare, LogOut, Zap, ShieldCheck,
 } from 'lucide-react';
 import { logout, getAccount, CLIENT_ID } from '../lib/auth';
+import AppIcon from './AppIcon';
 
 const NAV = [
   { id: 'dashboard', label: 'Dashboard',          icon: LayoutDashboard },
@@ -16,6 +17,7 @@ const NAV = [
   { id: 'weekend',   label: 'Weekend Availability',icon: CalendarDays    },
   { id: 'workforce', label: 'Workforce',           icon: Users           },
   { id: 'photos',    label: 'Photos',              icon: Image           },
+  { id: 'roles',     label: 'Members & Roles',     icon: ShieldCheck     },
 ];
 
 
@@ -28,9 +30,14 @@ export default function Sidebar({ activeTab, onTabChange, counts }) {
   return (
     <aside className="hidden md:flex flex-col w-60 bg-white border-r border-gray-200 min-h-screen flex-shrink-0">
       {/* Logo */}
-      <div className="px-5 py-7 border-b border-gray-100">
-        <img src="/logo.svg" alt="SmartDocs" className="h-24 w-auto" />
-        <p className="text-xs text-gray-400 mt-2 font-medium tracking-wide">Command Center</p>
+      <div className="px-5 py-5 border-b border-gray-100">
+        <div className="flex items-center gap-3">
+          <AppIcon size={38} />
+          <div>
+            <p className="text-sm font-bold text-gray-900 leading-tight">SmartDocs</p>
+            <p className="text-xs text-gray-400 font-medium leading-tight">Command Center</p>
+          </div>
+        </div>
       </div>
 
       {/* Nav */}

@@ -9,8 +9,10 @@ import WorkforceTab from './components/WorkforceTab';
 import WeekendAvailability from './components/WeekendAvailability';
 import TeamUpdates from './components/TeamUpdates';
 import Dashboard from './components/Dashboard';
+import TeamRoles from './components/TeamRoles';
 import AuthGate from './components/AuthGate';
 import Spinner from './components/Spinner';
+import AppIcon from './components/AppIcon';
 import { getTasks } from './lib/storage';
 import { CLIENT_ID } from './lib/auth';
 
@@ -26,6 +28,7 @@ const PAGE_TITLES = {
   weekend:    'Weekend Availability',
   priorities: 'Team Priorities',
   updates:    'Team Updates',
+  roles:      'Members & Roles',
 };
 
 function AppInner() {
@@ -46,13 +49,15 @@ function AppInner() {
       <div className="flex-1 flex flex-col min-w-0">
         {/* Top bar */}
         <header className="bg-white border-b border-gray-200 px-4 sm:px-6 py-3 flex items-center gap-3 sticky top-0 z-20">
-          {/* Mobile: logo left + title center + hamburger right */}
-          <img src="/logo.svg" alt="SmartDocs" className="h-7 w-auto md:hidden flex-shrink-0" />
-          <h1 className="hidden md:block text-base font-bold text-gray-900 flex-1">{PAGE_TITLES[activeTab] || 'Dashboard'}</h1>
+          {/* Mobile: icon + title + hamburger */}
+          <div className="md:hidden flex items-center gap-2 flex-shrink-0">
+            <AppIcon size={28} />
+          </div>
+          <h1 className="hidden md:block text-sm font-semibold text-gray-800 flex-1">{PAGE_TITLES[activeTab] || 'Dashboard'}</h1>
           <span className="md:hidden flex-1 text-center text-sm font-semibold text-gray-700">{PAGE_TITLES[activeTab] || 'Dashboard'}</span>
           <div className="hidden md:flex items-center gap-2">
             <div className="w-2 h-2 rounded-full bg-green-400" />
-            <span className="text-xs text-gray-400 font-medium">SmartDocs</span>
+            <span className="text-xs text-gray-400 font-medium">Connected</span>
           </div>
           <MobileNav activeTab={activeTab} onTabChange={setActiveTab} counts={counts} />
         </header>
@@ -78,6 +83,8 @@ function AppInner() {
             <WeekendAvailability defaultSection="priority" />
           ) : activeTab === 'updates' ? (
             <TeamUpdates />
+          ) : activeTab === 'roles' ? (
+            <TeamRoles />
           ) : (
             <>
               {activeTab === 'active' && <AddTaskForm />}

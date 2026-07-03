@@ -2,8 +2,9 @@ import { useState } from 'react';
 import {
   LayoutDashboard, CheckSquare, CheckCircle, SkipForward,
   MessageSquare, CalendarDays, Zap, Users, Image,
-  ChevronDown, X, Menu,
+  ChevronDown, X, Menu, ShieldCheck,
 } from 'lucide-react';
+import AppIcon from './AppIcon';
 
 const NAV = [
   { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
@@ -23,6 +24,7 @@ const NAV = [
       { id: 'weekend',    label: 'Weekend Availability', icon: CalendarDays  },
       { id: 'workforce',  label: 'Workforce',            icon: Users         },
       { id: 'photos',     label: 'Photos',               icon: Image         },
+      { id: 'roles',      label: 'Members & Roles',      icon: ShieldCheck   },
     ],
   },
 ];
@@ -62,7 +64,13 @@ export default function MobileNav({ activeTab, onTabChange, counts }) {
         >
           {/* Panel header */}
           <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
-            <img src="/logo.svg" alt="SmartDocs" className="h-8 w-auto" />
+            <div className="flex items-center gap-2.5">
+              <AppIcon size={32} />
+              <div>
+                <p className="text-sm font-bold text-gray-900 leading-tight">SmartDocs</p>
+                <p className="text-xs text-gray-400 leading-tight">Command Center</p>
+              </div>
+            </div>
             <button
               onClick={() => setOpen(false)}
               className="w-9 h-9 flex items-center justify-center rounded-full bg-gray-100 text-gray-500 hover:bg-gray-200 active:scale-90 transition-all"
