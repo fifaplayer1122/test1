@@ -24,7 +24,7 @@ const PAGE_TITLES = {
   done:       'Completed',
   skipped:    'Skipped',
   photos:     'Photos',
-  workforce:  'Workforce Report',
+  workforce:  'Team Report',
   weekend:    'Weekend Availability',
   priorities: 'Team Priorities',
   updates:    'Team Updates',

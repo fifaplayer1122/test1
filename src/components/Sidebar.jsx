@@ -15,8 +15,9 @@ const NAV = [
   { id: 'updates',   label: 'Team Updates',        icon: MessageSquare   },
   { id: 'priorities',label: 'Priorities',          icon: Zap             },
   { id: 'weekend',   label: 'Weekend Availability',icon: CalendarDays    },
-  { id: 'workforce', label: 'Workforce',           icon: Users           },
+  { id: 'workforce', label: 'Team Report',         icon: Users           },
   { id: 'photos',    label: 'Photos',              icon: Image           },
+  { section: 'Config' },
   { id: 'roles',     label: 'Members & Roles',     icon: ShieldCheck     },
 ];
 

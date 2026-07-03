@@ -22,16 +22,21 @@ const NAV = [
       { id: 'updates',    label: 'Team Updates',         icon: MessageSquare },
       { id: 'priorities', label: 'Priorities',           icon: Zap           },
       { id: 'weekend',    label: 'Weekend Availability', icon: CalendarDays  },
-      { id: 'workforce',  label: 'Workforce',            icon: Users         },
+      { id: 'workforce',  label: 'Team Report',          icon: Users         },
       { id: 'photos',     label: 'Photos',               icon: Image         },
-      { id: 'roles',      label: 'Members & Roles',      icon: ShieldCheck   },
+    ],
+  },
+  {
+    section: 'Config',
+    children: [
+      { id: 'roles', label: 'Members & Roles', icon: ShieldCheck },
     ],
   },
 ];
 
 export default function MobileNav({ activeTab, onTabChange, counts }) {
   const [open, setOpen]       = useState(false);
-  const [expanded, setExpanded] = useState({ Tasks: true, Team: true });
+  const [expanded, setExpanded] = useState({ Tasks: true, Team: true, Config: false });
 
   const navigate = (id) => { onTabChange(id); setOpen(false); };
   const toggle   = (section) => setExpanded(e => ({ ...e, [section]: !e[section] }));
