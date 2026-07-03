@@ -1,7 +1,21 @@
 import { useQuery } from '@tanstack/react-query';
-import { ListTodo, CheckCircle2, AlertCircle, Clock, ChevronRight, Zap, TrendingUp, Users } from 'lucide-react';
+import { ListTodo, CheckCircle2, AlertCircle, Clock, ChevronRight, Zap, TrendingUp, Users, MessageSquare, Bell } from 'lucide-react';
 import { getTasks, getWorkforceReport } from '../lib/storage';
+import { getUpdates, getPriority, getStatus } from '../lib/updatesStorage';
 import { PRIORITY_CONFIG } from '../lib/utils';
+
+const AVATAR_COLORS = [
+  'from-blue-500 to-blue-700', 'from-violet-500 to-violet-700',
+  'from-emerald-500 to-emerald-700', 'from-orange-400 to-orange-600',
+  'from-pink-500 to-pink-700', 'from-cyan-500 to-cyan-700',
+  'from-rose-500 to-rose-700', 'from-indigo-500 to-indigo-700',
+  'from-teal-500 to-teal-700', 'from-amber-500 to-amber-600',
+];
+function avatarColor(name) {
+  let h = 0;
+  for (let i = 0; i < name.length; i++) h = (h * 31 + name.charCodeAt(i)) & 0xffffffff;
+  return AVATAR_COLORS[Math.abs(h) % AVATAR_COLORS.length];
+}
 
 function formatEtaBadge(etaStr) {
   if (!etaStr) return null;
@@ -49,6 +63,7 @@ function StatCard({ icon: Icon, iconBg, label, value, subtext, onClick, urgent }
 export default function Dashboard({ onNavigate }) {
   const { data: tasks = [] } = useQuery({ queryKey: ['tasks'], queryFn: getTasks });
   const { data: wf } = useQuery({ queryKey: ['workforce'], queryFn: getWorkforceReport });
+  const { data: updates = [] } = useQuery({ queryKey: ['updates'], queryFn: getUpdates });
 
   const today = new Date();
   today.setHours(0, 0, 0, 0);
@@ -250,6 +265,7 @@ export default function Dashboard({ onNavigate }) {
             <h2 className="text-sm font-semibold text-gray-700">Team Today</h2>
             <button onClick={() => nav('workforce')} className="ml-auto text-xs text-blue-500 font-medium hover:underline">Full report</button>
           </div>
+
           {onLeave.length === 0 ? (
             <div className="flex items-center gap-2 text-green-600">
               <CheckCircle2 size={15} />
@@ -285,6 +301,74 @@ export default function Dashboard({ onNavigate }) {
           )}
         </div>
       </div>
+
+      {/* ── Team Updates snapshot ── */}
+      {updates.length > 0 && (() => {
+        // Group by author, take most recent per author, show blockers + need-input first
+        const byAuthor = {};
+        for (const u of updates) {
+          if (!byAuthor[u.author]) byAuthor[u.author] = [];
+          byAuthor[u.author].push(u);
+        }
+        const summaries = Object.entries(byAuthor).map(([author, items]) => {
+          const hasBlocker   = items.some(u => u.status === 'blocker');
+          const needsInput   = items.some(u => u.status === 'need_your_input');
+          const latest       = items[0];
+          return { author, items, hasBlocker, needsInput, latest };
+        }).sort((a, b) => (b.hasBlocker - a.hasBlocker) || (b.needsInput - a.needsInput));
+
+        return (
+          <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-5">
+            <div className="flex items-center gap-2 mb-4">
+              <MessageSquare size={15} className="text-gray-500" />
+              <h2 className="text-sm font-semibold text-gray-700">Team Updates</h2>
+              <span className="text-xs bg-gray-100 text-gray-500 font-bold px-2 py-0.5 rounded-full">{Object.keys(byAuthor).length}</span>
+              <button onClick={() => nav('updates')} className="ml-auto text-xs text-blue-500 font-medium hover:underline">View all</button>
+            </div>
+
+            <div className="space-y-2">
+              {summaries.map(({ author, items, hasBlocker, needsInput, latest }) => {
+                const pl = getPriority(latest.priority);
+                const st = getStatus(latest.status);
+                const color = avatarColor(author);
+                const urgentCount = items.filter(u => u.status === 'blocker' || u.status === 'need_your_input').length;
+
+                return (
+                  <button key={author} onClick={() => nav('updates')}
+                    className={`w-full flex items-center gap-3 px-3.5 py-3 rounded-xl border text-left transition-all hover:shadow-sm active:scale-95 ${
+                      hasBlocker ? 'bg-red-50/40 border-red-100' : needsInput ? 'bg-amber-50/40 border-amber-100' : 'bg-gray-50/50 border-gray-100 hover:bg-gray-100/60'
+                    }`}>
+                    <div className={`w-8 h-8 rounded-full bg-gradient-to-br ${color} text-white text-xs font-bold flex items-center justify-center flex-shrink-0`}>
+                      {author[0]}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-0.5">
+                        <span className="text-sm font-semibold text-gray-800">{author}</span>
+                        {hasBlocker && (
+                          <span className="flex items-center gap-0.5 text-xs font-semibold bg-red-100 text-red-600 px-1.5 py-0.5 rounded-full">
+                            <Bell size={9} />Blocker
+                          </span>
+                        )}
+                        {!hasBlocker && needsInput && (
+                          <span className="text-xs font-semibold bg-amber-100 text-amber-600 px-1.5 py-0.5 rounded-full">Needs input</span>
+                        )}
+                      </div>
+                      <p className="text-xs text-gray-500 truncate">{latest.workingOn || latest.text}</p>
+                    </div>
+                    <div className="flex items-center gap-1.5 flex-shrink-0">
+                      <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${pl.pill}`}>{pl.label}</span>
+                      {items.length > 1 && (
+                        <span className="text-xs text-gray-400 font-medium">{items.length}</span>
+                      )}
+                      <ChevronRight size={13} className="text-gray-300" />
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        );
+      })()}
     </div>
   );
 }
