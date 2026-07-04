@@ -1,0 +1,20 @@
+server:
+  port: 8080
+
+spring:
+  data:
+    mongodb:
+      uri: mongodb+srv://command-center-usr:jindS4AyTF0UffSc@development.vtinu.mongodb.net/?appName=development
+      database: command-center-db
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          jwk-set-uri: https://login.microsoftonline.com/7c8ac43a-970e-4d46-ba45-c5894dd3fe09/discovery/v2.0/keys
+          issuer-uri: https://login.microsoftonline.com/7c8ac43a-970e-4d46-ba45-c5894dd3fe09/v2.0
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health
