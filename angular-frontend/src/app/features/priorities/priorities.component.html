@@ -1,0 +1,96 @@
+<div class="flex items-center justify-between mb-6">
+  <h1 class="text-2xl font-bold text-gray-800">Team Priorities</h1>
+</div>
+
+<div *ngIf="loading" class="flex justify-center p-8">
+  <mat-spinner></mat-spinner>
+</div>
+
+<div *ngIf="!loading" class="space-y-6">
+  <!-- Add form for my own items -->
+  <mat-card>
+    <mat-card-header>
+      <mat-card-title>Add Priority Item</mat-card-title>
+    </mat-card-header>
+    <mat-card-content class="pt-4">
+      <form [formGroup]="addForm" class="flex gap-3 items-start flex-wrap">
+        <mat-form-field appearance="outline" class="flex-1 min-w-48">
+          <mat-label>Title</mat-label>
+          <input matInput formControlName="title" placeholder="Priority item" />
+        </mat-form-field>
+        <mat-form-field appearance="outline" class="w-40">
+          <mat-label>Level</mat-label>
+          <mat-select formControlName="priority_level">
+            <mat-option *ngFor="let p of priorityLevels" [value]="p.value">{{ p.label }}</mat-option>
+          </mat-select>
+        </mat-form-field>
+        <button mat-raised-button color="primary" class="mt-1" (click)="addItem()" [disabled]="addForm.invalid">
+          <mat-icon>add</mat-icon>
+          Add
+        </button>
+      </form>
+    </mat-card-content>
+  </mat-card>
+
+  <!-- Member groups -->
+  <mat-card *ngFor="let group of groups">
+    <mat-card-header>
+      <mat-card-title class="flex items-center gap-2">
+        <mat-icon class="text-blue-500">person</mat-icon>
+        {{ group.name }}
+        <span class="text-sm font-normal text-gray-400">({{ group.email }})</span>
+      </mat-card-title>
+    </mat-card-header>
+    <mat-card-content class="pt-2">
+      <div *ngIf="group.items.length === 0" class="text-gray-400 text-sm py-2">No priorities set.</div>
+
+      <div class="space-y-2">
+        <div
+          *ngFor="let item of group.items"
+          class="flex items-center gap-3 p-3 rounded-lg bg-gray-50 border border-gray-100"
+        >
+          <!-- Edit mode -->
+          <ng-container *ngIf="editingId === item.id; else viewMode">
+            <form [formGroup]="editForm" class="flex gap-2 items-center flex-1 flex-wrap">
+              <mat-form-field appearance="outline" class="flex-1 min-w-40" style="margin-bottom:-1.25em">
+                <input matInput formControlName="title" />
+              </mat-form-field>
+              <mat-form-field appearance="outline" class="w-36" style="margin-bottom:-1.25em">
+                <mat-select formControlName="priority_level">
+                  <mat-option *ngFor="let p of priorityLevels" [value]="p.value">{{ p.label }}</mat-option>
+                </mat-select>
+              </mat-form-field>
+              <div class="flex gap-1">
+                <button mat-icon-button color="primary" (click)="saveEdit(item)" [disabled]="editForm.invalid">
+                  <mat-icon>save</mat-icon>
+                </button>
+                <button mat-icon-button (click)="cancelEdit()">
+                  <mat-icon>close</mat-icon>
+                </button>
+              </div>
+            </form>
+          </ng-container>
+
+          <!-- View mode -->
+          <ng-template #viewMode>
+            <div class="flex-1 font-medium text-gray-900">{{ item.title }}</div>
+            <app-priority-badge [priority]="item.priority_level"></app-priority-badge>
+            <div class="flex gap-1" *ngIf="canEdit(item)">
+              <button mat-icon-button (click)="startEdit(item)">
+                <mat-icon>edit</mat-icon>
+              </button>
+              <button mat-icon-button color="warn" (click)="deleteItem(item)">
+                <mat-icon>delete</mat-icon>
+              </button>
+            </div>
+          </ng-template>
+        </div>
+      </div>
+    </mat-card-content>
+  </mat-card>
+
+  <div *ngIf="groups.length === 0" class="text-center py-12 text-gray-400">
+    <mat-icon class="text-5xl">list</mat-icon>
+    <p class="mt-2">No priority items yet.</p>
+  </div>
+</div>

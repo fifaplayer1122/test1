@@ -1,0 +1,72 @@
+<div class="flex items-center justify-between mb-6">
+  <h1 class="text-2xl font-bold text-gray-800">Team Updates</h1>
+</div>
+
+<div class="max-w-3xl mx-auto space-y-4">
+  <!-- Post area -->
+  <mat-card>
+    <mat-card-content class="pt-4">
+      <div class="flex gap-3 items-start">
+        <mat-icon class="text-blue-400 mt-2">account_circle</mat-icon>
+        <div class="flex-1">
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>What's on your mind?</mat-label>
+            <textarea matInput [formControl]="postControl" rows="3" placeholder="Share an update with the team..."></textarea>
+          </mat-form-field>
+          <div class="flex justify-end">
+            <button
+              mat-raised-button
+              color="primary"
+              (click)="post()"
+              [disabled]="postControl.invalid || posting"
+            >
+              <mat-icon>send</mat-icon>
+              Post Update
+            </button>
+          </div>
+        </div>
+      </div>
+    </mat-card-content>
+  </mat-card>
+
+  <!-- Loading -->
+  <div *ngIf="loading" class="flex justify-center p-8">
+    <mat-spinner></mat-spinner>
+  </div>
+
+  <!-- Empty state -->
+  <div *ngIf="!loading && updates.length === 0" class="text-center py-12 text-gray-400">
+    <mat-icon class="text-5xl">feed</mat-icon>
+    <p class="mt-2">No updates yet. Be the first to post!</p>
+  </div>
+
+  <!-- Updates feed -->
+  <mat-card *ngFor="let update of updates">
+    <mat-card-content class="pt-4">
+      <div class="flex items-start gap-3">
+        <mat-icon class="text-gray-400 flex-shrink-0">account_circle</mat-icon>
+        <div class="flex-1 min-w-0">
+          <div class="flex items-center justify-between gap-2">
+            <div>
+              <span class="font-semibold text-gray-900">{{ update.member_name }}</span>
+              <span class="text-xs text-gray-400 ml-2">{{ update.member_email }}</span>
+            </div>
+            <div class="flex items-center gap-2">
+              <span class="text-xs text-gray-400">{{ formatDate(update.created_at) }}</span>
+              <button
+                *ngIf="isOwn(update)"
+                mat-icon-button
+                color="warn"
+                style="width:28px;height:28px;line-height:28px;"
+                (click)="delete(update)"
+              >
+                <mat-icon style="font-size:18px;">delete</mat-icon>
+              </button>
+            </div>
+          </div>
+          <p class="mt-2 text-gray-700 whitespace-pre-wrap">{{ update.content }}</p>
+        </div>
+      </div>
+    </mat-card-content>
+  </mat-card>
+</div>

@@ -1,0 +1,31 @@
+<h2 mat-dialog-title [ngClass]="isApprove ? 'text-green-700' : 'text-red-700'">
+  {{ isApprove ? 'Approve' : 'Reject' }} Request
+</h2>
+
+<mat-dialog-content class="pt-2">
+  <div class="mb-4 p-3 rounded-lg bg-gray-50 border">
+    <div class="font-semibold text-gray-800">{{ data.approval.title }}</div>
+    <div class="text-sm text-gray-500 mt-1">
+      {{ data.approval.member_name }} • {{ data.approval.category }} • ${{ data.approval.cost | number:'1.2-2' }}
+    </div>
+    <div class="text-sm text-gray-600 mt-2">{{ data.approval.reason }}</div>
+  </div>
+
+  <form [formGroup]="form">
+    <mat-form-field appearance="outline" class="full-width">
+      <mat-label>Decision Notes (optional)</mat-label>
+      <textarea matInput formControlName="decision_notes" rows="3" placeholder="Add any notes for this decision..."></textarea>
+    </mat-form-field>
+  </form>
+</mat-dialog-content>
+
+<mat-dialog-actions align="end">
+  <button mat-button (click)="cancel()">Cancel</button>
+  <button
+    mat-raised-button
+    [color]="isApprove ? 'primary' : 'warn'"
+    (click)="submit()"
+  >
+    {{ isApprove ? 'Approve' : 'Reject' }}
+  </button>
+</mat-dialog-actions>

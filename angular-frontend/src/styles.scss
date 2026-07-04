@@ -1,0 +1,62 @@
+@use '@angular/material' as mat;
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@include mat.core();
+
+$primary-palette: mat.define-palette(mat.$indigo-palette, 800);
+$accent-palette: mat.define-palette(mat.$blue-palette, 600);
+$warn-palette: mat.define-palette(mat.$red-palette);
+
+$theme: mat.define-light-theme((
+  color: (
+    primary: $primary-palette,
+    accent: $accent-palette,
+    warn: $warn-palette,
+  ),
+  typography: mat.define-typography-config(),
+  density: 0,
+));
+
+@include mat.all-component-themes($theme);
+
+html, body {
+  height: 100%;
+  margin: 0;
+  font-family: Roboto, "Helvetica Neue", sans-serif;
+}
+
+.priority-very_high {
+  background-color: #ef4444 !important;
+  color: white !important;
+}
+.priority-high {
+  background-color: #f97316 !important;
+  color: white !important;
+}
+.priority-medium {
+  background-color: #eab308 !important;
+  color: #1a1a1a !important;
+}
+.priority-low {
+  background-color: #22c55e !important;
+  color: white !important;
+}
+
+.mat-mdc-row:hover {
+  background-color: rgba(0,0,0,0.04);
+}
+
+.stat-card {
+  border-radius: 12px !important;
+}
+
+.full-width {
+  width: 100%;
+}
+
+.mat-mdc-dialog-content {
+  max-height: 80vh;
+  overflow-y: auto;
+}

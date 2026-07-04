@@ -1,0 +1,99 @@
+<div *ngIf="!isAdmin" class="flex items-center justify-center h-64">
+  <div class="text-center text-gray-500">
+    <mat-icon class="text-6xl mb-4">lock</mat-icon>
+    <p class="text-xl">Access Restricted</p>
+    <p>This page is for admins only.</p>
+  </div>
+</div>
+
+<ng-container *ngIf="isAdmin">
+  <div *ngIf="loading" class="flex justify-center items-center h-64">
+    <mat-spinner></mat-spinner>
+  </div>
+
+  <div *ngIf="!loading">
+    <!-- Stat Cards -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+      <mat-card class="stat-card cursor-pointer" routerLink="/tasks">
+        <mat-card-content class="p-6">
+          <div class="flex items-center justify-between">
+            <div>
+              <p class="text-gray-500 text-sm font-medium">Active Tasks</p>
+              <p class="text-4xl font-bold text-blue-600 mt-1">{{ activeTasks.length }}</p>
+            </div>
+            <mat-icon class="text-5xl text-blue-200" style="font-size:48px;width:48px;height:48px;">task_alt</mat-icon>
+          </div>
+        </mat-card-content>
+      </mat-card>
+
+      <mat-card class="stat-card cursor-pointer" routerLink="/done-tasks">
+        <mat-card-content class="p-6">
+          <div class="flex items-center justify-between">
+            <div>
+              <p class="text-gray-500 text-sm font-medium">Completed</p>
+              <p class="text-4xl font-bold text-green-600 mt-1">{{ doneTasks.length }}</p>
+            </div>
+            <mat-icon class="text-5xl text-green-200" style="font-size:48px;width:48px;height:48px;">check_circle</mat-icon>
+          </div>
+        </mat-card-content>
+      </mat-card>
+
+      <mat-card class="stat-card cursor-pointer" routerLink="/skipped-tasks">
+        <mat-card-content class="p-6">
+          <div class="flex items-center justify-between">
+            <div>
+              <p class="text-gray-500 text-sm font-medium">Skipped</p>
+              <p class="text-4xl font-bold text-gray-500 mt-1">{{ skippedTasks.length }}</p>
+            </div>
+            <mat-icon class="text-5xl text-gray-200" style="font-size:48px;width:48px;height:48px;">skip_next</mat-icon>
+          </div>
+        </mat-card-content>
+      </mat-card>
+
+      <mat-card class="stat-card cursor-pointer" routerLink="/approvals">
+        <mat-card-content class="p-6">
+          <div class="flex items-center justify-between">
+            <div>
+              <p class="text-gray-500 text-sm font-medium">Pending Approvals</p>
+              <p class="text-4xl font-bold text-orange-600 mt-1">{{ pendingApprovals.length }}</p>
+            </div>
+            <mat-icon class="text-5xl text-orange-200" style="font-size:48px;width:48px;height:48px;">approval</mat-icon>
+          </div>
+        </mat-card-content>
+      </mat-card>
+    </div>
+
+    <!-- Needs Attention -->
+    <mat-card *ngIf="urgentTasks.length > 0">
+      <mat-card-header>
+        <mat-card-title class="flex items-center gap-2">
+          <mat-icon class="text-red-500">warning</mat-icon>
+          Needs Attention — Very High Priority
+        </mat-card-title>
+      </mat-card-header>
+      <mat-card-content class="pt-4">
+        <div class="space-y-3">
+          <div
+            *ngFor="let task of urgentTasks"
+            class="flex items-start gap-3 p-3 bg-red-50 rounded-lg border border-red-200"
+          >
+            <mat-icon class="text-red-500 mt-0.5 flex-shrink-0">priority_high</mat-icon>
+            <div class="flex-1 min-w-0">
+              <p class="font-semibold text-gray-900">{{ task.title }}</p>
+              <p class="text-sm text-gray-500 mt-0.5" *ngIf="task.notes">{{ task.notes }}</p>
+              <p class="text-xs text-gray-400 mt-1" *ngIf="task.eta">ETA: {{ task.eta }}</p>
+            </div>
+            <app-priority-badge [priority]="task.priority"></app-priority-badge>
+          </div>
+        </div>
+      </mat-card-content>
+    </mat-card>
+
+    <mat-card *ngIf="urgentTasks.length === 0" class="mt-4">
+      <mat-card-content class="p-6 text-center text-gray-400">
+        <mat-icon class="text-4xl text-green-400">check_circle_outline</mat-icon>
+        <p class="mt-2">No very high priority tasks. All clear!</p>
+      </mat-card-content>
+    </mat-card>
+  </div>
+</ng-container>

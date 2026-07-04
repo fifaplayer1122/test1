@@ -1,0 +1,106 @@
+<div class="flex items-center justify-between mb-6">
+  <h1 class="text-2xl font-bold text-gray-800">Approval Requests</h1>
+  <button *ngIf="!isAdmin" mat-raised-button color="primary" (click)="openSubmitDialog()">
+    <mat-icon>add</mat-icon>
+    Submit Request
+  </button>
+</div>
+
+<!-- Admin filter tabs -->
+<div *ngIf="isAdmin" class="flex gap-2 mb-4 flex-wrap">
+  <button
+    mat-stroked-button
+    [color]="activeFilter === 'pending' ? 'primary' : ''"
+    [class.mat-flat-button]="activeFilter === 'pending'"
+    (click)="setFilter('pending')"
+  >
+    Pending
+    <span *ngIf="pendingCount > 0" class="ml-1 bg-orange-500 text-white text-xs rounded-full px-1.5 py-0.5">{{ pendingCount }}</span>
+  </button>
+  <button mat-stroked-button [color]="activeFilter === 'approved' ? 'primary' : ''" (click)="setFilter('approved')">Approved</button>
+  <button mat-stroked-button [color]="activeFilter === 'rejected' ? 'warn' : ''" (click)="setFilter('rejected')">Rejected</button>
+  <button mat-stroked-button [color]="activeFilter === 'all' ? 'accent' : ''" (click)="setFilter('all')">All</button>
+</div>
+
+<mat-card>
+  <mat-card-content>
+    <div *ngIf="loading" class="flex justify-center p-8">
+      <mat-spinner></mat-spinner>
+    </div>
+
+    <div *ngIf="!loading && filteredApprovals.length === 0" class="text-center py-12 text-gray-400">
+      <mat-icon class="text-5xl">inbox</mat-icon>
+      <p class="mt-2">No approval requests found.</p>
+      <button *ngIf="!isAdmin" mat-stroked-button color="primary" class="mt-4" (click)="openSubmitDialog()">
+        Submit your first request
+      </button>
+    </div>
+
+    <table *ngIf="!loading && filteredApprovals.length > 0" mat-table [dataSource]="filteredApprovals" class="w-full">
+      <ng-container matColumnDef="requester" *ngIf="isAdmin">
+        <th mat-header-cell *matHeaderCellDef class="font-semibold">Requester</th>
+        <td mat-cell *matCellDef="let a">
+          <div class="font-medium">{{ a.member_name }}</div>
+          <div class="text-xs text-gray-400">{{ a.member_email }}</div>
+        </td>
+      </ng-container>
+
+      <ng-container matColumnDef="title">
+        <th mat-header-cell *matHeaderCellDef class="font-semibold">Title</th>
+        <td mat-cell *matCellDef="let a">
+          <div class="font-medium text-gray-900">{{ a.title }}</div>
+          <div class="text-xs text-gray-400 mt-0.5">{{ a.reason }}</div>
+        </td>
+      </ng-container>
+
+      <ng-container matColumnDef="category">
+        <th mat-header-cell *matHeaderCellDef class="font-semibold">Category</th>
+        <td mat-cell *matCellDef="let a">
+          <span class="capitalize text-sm">{{ a.category }}</span>
+        </td>
+      </ng-container>
+
+      <ng-container matColumnDef="cost">
+        <th mat-header-cell *matHeaderCellDef class="font-semibold">Cost</th>
+        <td mat-cell *matCellDef="let a">
+          <span class="font-mono">${{ a.cost | number:'1.2-2' }}</span>
+        </td>
+      </ng-container>
+
+      <ng-container matColumnDef="priority">
+        <th mat-header-cell *matHeaderCellDef class="font-semibold">Priority</th>
+        <td mat-cell *matCellDef="let a">
+          <span class="text-sm font-medium">{{ a.priority }}</span>
+        </td>
+      </ng-container>
+
+      <ng-container matColumnDef="status">
+        <th mat-header-cell *matHeaderCellDef class="font-semibold">Status</th>
+        <td mat-cell *matCellDef="let a">
+          <span [ngClass]="statusClass(a.status)" class="capitalize">{{ a.status }}</span>
+          <div *ngIf="a.decision_notes" class="text-xs text-gray-400 mt-0.5">{{ a.decision_notes }}</div>
+        </td>
+      </ng-container>
+
+      <ng-container matColumnDef="actions">
+        <th mat-header-cell *matHeaderCellDef class="font-semibold">Actions</th>
+        <td mat-cell *matCellDef="let a">
+          <div *ngIf="a.status === 'pending'" class="flex gap-1">
+            <button mat-icon-button color="primary" matTooltip="Approve" (click)="openDecideDialog(a, 'approved')">
+              <mat-icon>check_circle</mat-icon>
+            </button>
+            <button mat-icon-button color="warn" matTooltip="Reject" (click)="openDecideDialog(a, 'rejected')">
+              <mat-icon>cancel</mat-icon>
+            </button>
+          </div>
+          <span *ngIf="a.status !== 'pending'" class="text-xs text-gray-400">
+            by {{ a.decided_by }}
+          </span>
+        </td>
+      </ng-container>
+
+      <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+      <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
+    </table>
+  </mat-card-content>
+</mat-card>

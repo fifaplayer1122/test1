@@ -1,0 +1,62 @@
+<h2 mat-dialog-title>Edit Weekend Availability</h2>
+
+<mat-dialog-content>
+  <form [formGroup]="form" class="flex flex-col gap-4 pt-2">
+    <div class="text-sm font-semibold text-gray-700 border-b pb-1">Saturday</div>
+
+    <mat-form-field appearance="outline" class="full-width">
+      <mat-label>Saturday Status</mat-label>
+      <mat-select formControlName="saturday_status">
+        <mat-option *ngFor="let s of statuses" [value]="s.value">{{ s.label }}</mat-option>
+      </mat-select>
+    </mat-form-field>
+
+    <ng-container *ngIf="saturdayNeedsDetails">
+      <mat-form-field appearance="outline" class="full-width">
+        <mat-label>Saturday Available Time</mat-label>
+        <input matInput formControlName="saturday_time" placeholder="e.g. 10am – 2pm" />
+      </mat-form-field>
+
+      <mat-form-field appearance="outline" class="full-width">
+        <mat-label>Saturday Details</mat-label>
+        <textarea matInput formControlName="saturday_details" rows="2" placeholder="What you can help with..."></textarea>
+      </mat-form-field>
+
+      <div *ngIf="saturdayDetailsEmpty" class="text-red-500 text-sm -mt-2">
+        Please provide time or details when you are available or partial on Saturday.
+      </div>
+    </ng-container>
+
+    <div class="text-sm font-semibold text-gray-700 border-b pb-1 mt-2">Sunday</div>
+
+    <mat-form-field appearance="outline" class="full-width">
+      <mat-label>Sunday Status</mat-label>
+      <mat-select formControlName="sunday_status">
+        <mat-option *ngFor="let s of statuses" [value]="s.value">{{ s.label }}</mat-option>
+      </mat-select>
+    </mat-form-field>
+
+    <ng-container *ngIf="sundayNeedsDetails">
+      <mat-form-field appearance="outline" class="full-width">
+        <mat-label>Sunday Available Time</mat-label>
+        <input matInput formControlName="sunday_time" placeholder="e.g. 9am – 12pm" />
+      </mat-form-field>
+
+      <mat-form-field appearance="outline" class="full-width">
+        <mat-label>Sunday Details</mat-label>
+        <textarea matInput formControlName="sunday_details" rows="2" placeholder="What you can help with..."></textarea>
+      </mat-form-field>
+
+      <div *ngIf="sundayDetailsEmpty" class="text-red-500 text-sm -mt-2">
+        Please provide time or details when you are available or partial on Sunday.
+      </div>
+    </ng-container>
+  </form>
+</mat-dialog-content>
+
+<mat-dialog-actions align="end">
+  <button mat-button (click)="cancel()">Cancel</button>
+  <button mat-raised-button color="primary" (click)="submit()" [disabled]="!canSave">
+    Save
+  </button>
+</mat-dialog-actions>

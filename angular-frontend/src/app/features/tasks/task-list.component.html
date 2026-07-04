@@ -1,0 +1,86 @@
+<div class="flex items-center justify-between mb-6">
+  <h1 class="text-2xl font-bold text-gray-800">{{ title }}</h1>
+  <button *ngIf="status === 'todo'" mat-raised-button color="primary" (click)="openAddDialog()">
+    <mat-icon>add</mat-icon>
+    Add Task
+  </button>
+</div>
+
+<mat-card>
+  <mat-card-content>
+    <div *ngIf="loading" class="flex justify-center p-8">
+      <mat-spinner></mat-spinner>
+    </div>
+
+    <div *ngIf="!loading && tasks.length === 0" class="text-center py-12 text-gray-400">
+      <mat-icon class="text-5xl">inbox</mat-icon>
+      <p class="mt-2">No {{ title.toLowerCase() }} found.</p>
+    </div>
+
+    <table *ngIf="!loading && tasks.length > 0" mat-table [dataSource]="sortedTasks" class="w-full">
+      <ng-container matColumnDef="title">
+        <th mat-header-cell *matHeaderCellDef class="font-semibold">Title</th>
+        <td mat-cell *matCellDef="let task">
+          <span class="font-medium text-gray-900">{{ task.title }}</span>
+        </td>
+      </ng-container>
+
+      <ng-container matColumnDef="priority">
+        <th mat-header-cell *matHeaderCellDef class="font-semibold">Priority</th>
+        <td mat-cell *matCellDef="let task">
+          <app-priority-badge [priority]="task.priority"></app-priority-badge>
+        </td>
+      </ng-container>
+
+      <ng-container matColumnDef="notes">
+        <th mat-header-cell *matHeaderCellDef class="font-semibold">Notes</th>
+        <td mat-cell *matCellDef="let task">
+          <span class="text-gray-600 text-sm">{{ task.notes || '—' }}</span>
+        </td>
+      </ng-container>
+
+      <ng-container matColumnDef="eta">
+        <th mat-header-cell *matHeaderCellDef class="font-semibold">ETA</th>
+        <td mat-cell *matCellDef="let task">
+          <span class="text-gray-600 text-sm">{{ task.eta || '—' }}</span>
+        </td>
+      </ng-container>
+
+      <ng-container matColumnDef="actions">
+        <th mat-header-cell *matHeaderCellDef class="font-semibold">Actions</th>
+        <td mat-cell *matCellDef="let task">
+          <div class="flex gap-1">
+            <!-- Active task actions -->
+            <ng-container *ngIf="status === 'todo'">
+              <button mat-icon-button color="primary" matTooltip="Edit" (click)="openEditDialog(task)">
+                <mat-icon>edit</mat-icon>
+              </button>
+              <button mat-icon-button color="accent" matTooltip="Mark Done" (click)="complete(task)">
+                <mat-icon>check_circle</mat-icon>
+              </button>
+              <button mat-icon-button matTooltip="Skip" (click)="skip(task)">
+                <mat-icon>skip_next</mat-icon>
+              </button>
+              <button mat-icon-button color="warn" matTooltip="Delete" (click)="delete(task)">
+                <mat-icon>delete</mat-icon>
+              </button>
+            </ng-container>
+
+            <!-- Done/Skipped task actions -->
+            <ng-container *ngIf="status !== 'todo'">
+              <button mat-icon-button color="primary" matTooltip="Restore to Active" (click)="restore(task)">
+                <mat-icon>restore</mat-icon>
+              </button>
+              <button mat-icon-button color="warn" matTooltip="Delete" (click)="delete(task)">
+                <mat-icon>delete</mat-icon>
+              </button>
+            </ng-container>
+          </div>
+        </td>
+      </ng-container>
+
+      <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+      <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
+    </table>
+  </mat-card-content>
+</mat-card>
